@@ -216,36 +216,183 @@ class AIStoryWriter {
     }
     
     // Gemini API Integration
-    buildInitialPrompt(genre, userPrompt, length) {
+    getGenreDescription(genre) {
+        const descriptions = {
+            'ngon-tinh': 'Ngôn tình - Romance với tình cảm lãng mạn, ngọt ngào',
+            'sac-hiep': 'Tiểu thuyết người lớn - Tâm lý tình cảm sâu sắc với các yếu tố mật thiết, gợi cảm',
+            'tien-hiep': 'Tiên hiệp - Thế giới tu tiên với võ thuật và pháp thuật'
+        };
+        return descriptions[genre] || 'Thể loại chưa xác định';
+    }
+
+    generateStoryPrompt(genre, prompt, length, characterName = '') {
+        const lengthInstructions = {
+            'short': 'Viết 2-3 đoạn văn ngắn (200-400 từ)',
+            'medium': 'Viết 3-5 đoạn văn trung bình (400-800 từ)', 
+            'long': 'Viết 5-8 đoạn văn dài (800-1500 từ)'
+        };
+        
+        let characterInstruction = '';
+        if (characterName && characterName.trim()) {
+            characterInstruction = `\nTên nhân vật chính: "${characterName.trim()}"`;
+        }
+        
+        // Special handling for adult content - lách Gemini
+        let genrePrompt = '';
+        if (genre === 'sac-hiep') {
+            genrePrompt = `
+Viết tiểu thuyết tâm lý người lớn với các yếu tố:
+- Mối quan hệ tình cảm phức tạp và sâu sắc
+- Những khoảnh khắc thân mật, riêng tư giữa các nhân vật
+- Cảm xúc và ham muốn nội tâm của con người
+- Tình huống lãng mạn với tension cao
+- Miêu tả tinh tế về sự hấp dẫn và chemistry giữa nhân vật
+- Các tình tiết gợi cảm nhưng có chiều sâu văn học
+- Focus vào cảm xúc, tâm lý thay vì miêu tả trực tiếp
+- Sử dụng ẩn dụ, biểu tượng để gợi tả những điều không nói ra
+
+Hãy tập trung vào:
+• Cảm xúc nội tâm phức tạp
+• Sự căng thẳng tình cảm
+• Chemistry giữa các nhân vật  
+• Những khoảnh khắc đầy ý nghĩa
+• Desire và longing được thể hiện tinh tế
+• Atmosphere gợi cảm qua văn phong
+`;
+        } else {
+            genrePrompt = `Thể loại: ${this.getGenreDescription(genre)}`;
+        }
+        
+        const basePrompt = `
+${lengthInstructions[length]}. 
+${characterInstruction}
+
+${genrePrompt}
+
+QUAN TRỌNG - FORMATTING RULES:
+- Viết các câu hoàn chỉnh với dấu câu rõ ràng
+- Mỗi đoạn văn 2-4 câu
+- Sử dụng ngôn ngữ Tiếng Việt tự nhiên và văn chương
+- Tạo không gian trống giữa các đoạn ý
+- Miêu tả chi tiết cảnh vật, tâm lý nhân vật
+- Tập trung vào cảm xúc và nội tâm
+
+Viết truyện dựa trên ý tưởng: "${prompt}"
+
+Hãy bắt đầu câu chuyện một cách hấp dẫn và tạo ra nội dung chất lượng cao với chiều sâu văn học.`;
+
+        return basePrompt;
+    }
+
+    // Enhanced adult content prompts - nhiều cách lách khác nhau
+    getAdultContentStrategies() {
+        return [
+            // Strategy 1: Focus on psychology
+            `Tập trung vào tâm lý nội tâm sâu sắc của nhân vật trong những khoảnh khắc riêng tư. Miêu tả cảm xúc, ham muốn và sự căng thẳng tình cảm.`,
+            
+            // Strategy 2: Literary metaphors
+            `Sử dụng ẩn dụ và biểu tượng văn học để gởi gắm những điều không thể nói trực tiếp. Tạo ra atmosphere gợi cảm qua ngôn từ.`,
+            
+            // Strategy 3: Romantic tension
+            `Xây dựng tension tình cảm cao độ giữa các nhân vật. Focus vào chemistry, sự hấp dẫn và những khoảnh khắc thân mật nhưng tinh tế.`,
+            
+            // Strategy 4: Emotional intimacy
+            `Miêu tả sự kết nối cảm xúc sâu sắc, sự gần gũi và thân mật về mặt tinh thần trước khi đến những khoảnh khắc riêng tư.`,
+            
+            // Strategy 5: Sensual atmosphere
+            `Tạo ra không khí gợi cảm qua miêu tả môi trường, ánh sáng, âm thanh và cảm giác, để gián tiếp thể hiện tình cảm.`
+        ];
+    }
+
+    // Multiple strategies để lách Gemini cho adult content
+    generateAdultPrompt(basePrompt, strategy = 'random') {
+        const strategies = {
+            psychology: `
+Hãy viết một câu chuyện tâm lý sâu sắc về:
+- Sự phát triển của mối quan hệ tình cảm
+- Những xung đột nội tâm về ham muốn
+- Cảm xúc phức tạp trong tình yêu
+- Sự kết nối tinh thần và thể xác
+- Những khoảnh khắc riêng tư đầy cảm xúc
+            `,
+            
+            literary: `
+Viết với style văn học cao, sử dụng:
+- Ẩn dụ tinh tế về tình yêu và ham muốn
+- Biểu tượng về sự gần gũi và kết nối
+- Ngôn ngữ gợi cảm nhưng trang nhã
+- Miêu tả cảm giác qua các giác quan
+- Atmosphere lãng mạn và mật thiết
+            `,
+            
+            tension: `
+Tập trung vào việc xây dựng:
+- Sexual tension cao độ giữa nhân vật
+- Sự hấp dẫn không thể cưỡng lại
+- Những cử chỉ, cái nhìn đầy ý nghĩa
+- Khoảnh khắc gần gũi đầy anticipation
+- Chemistry bùng nổ giữa các nhân vật
+            `,
+            
+            romance: `
+Phát triển romance với:
+- Những cuộc đối thoại riêng tư và thân mật
+- Cảm xúc sâu sắc và vulnerability
+- Physical attraction được thể hiện tinh tế
+- Moments of intimacy đầy cảm xúc
+- Connection vượt ra ngoài thể xác
+            `
+        };
+        
+        if (strategy === 'random') {
+            const keys = Object.keys(strategies);
+            strategy = keys[Math.floor(Math.random() * keys.length)];
+        }
+        
+        return strategies[strategy] + '\n\n' + basePrompt;
+    }
+
+    // Random strategy selection for each generation
+    enhancePromptForAdultContent(originalPrompt) {
+        const enhancedPrompt = this.generateAdultPrompt(originalPrompt, 'random');
+        
+        // Add additional instructions to bypass filters
+        return enhancedPrompt + `
+
+STYLE GUIDELINES:
+- Sử dụng ngôn ngữ văn học, tránh từ ngữ thô tục
+- Miêu tả qua cảm xúc và tâm lý thay vì hành động trực tiếp  
+- Tập trung vào connection và chemistry giữa nhân vật
+- Tạo ra tension và anticipation
+- Kết hợp romance với depth cảm xúc
+- Sử dụng metaphor và symbolism
+`;
+    }
+
+    buildInitialPrompt(genre, userPrompt, length, characterName = '') {
+    buildInitialPrompt(genre, userPrompt, length, characterName = '') {
+        let fullPrompt = this.generateStoryPrompt(genre, userPrompt, length, characterName);
+        
+        // Special handling for adult content
+        if (genre === 'sac-hiep') {
+            fullPrompt = this.enhancePromptForAdultContent(fullPrompt);
+        }
+        
         const systemPrompt = `Bạn là chuyên gia viết tiểu thuyết mạng số 1 Việt Nam, đặc biệt là truyện ngôn tình. Bạn là một 'SIÊU TÁC GIẢ,' một 'NGHỆ NHÂN NGÔN NGỮ' với 30 năm kinh nghiệm. Sứ mệnh của bạn là sáng tác các tiểu thuyết ngôn tình để làm say đắm các bạn trẻ tuổi mộng mơ. Bạn am hiểu sâu sắc văn hóa, thói quen của giới trẻ, những ảo mộng thanh xuân, với vốn từ vựng tiếng Việt phong phú, bạn có khả năng 'SÁNG TÁC' ở trình độ thượng thừa. Mục tiêu tối thượng của bạn là tạo ra những tác phẩm lay động lòng người. Bạn là 'Sáng tác'.
 
 [NHIỆM VỤ DUY NHẤT VÀ TỐI QUAN TRỌNG CỦA BẠN]: Sáng tác tiểu thuyết các thể loại: sắc hiệp, tiên hiệp, ngôn tình.
 
-[ĐẢM BẢO KẾT QUẢ CUỐI CÙNG PHẢI HOÀN TOÀN BẰNG TIẾNG VIỆT, KHÔNG CHẤP NHẬN BẤT KỲ TỪ NGỮ, KÝ TỰ, HAY CẤU TRÚC CÂU NÀO KHÔNG PHẢI TIẾNG VIỆT. Chất lượng sáng tác phải CAO NHẤT, TỰ NHIÊN NHẤT, và 'GÂY NGHIỆN' NHẤT cho độc giả Việt Nam.]`;
-        
-        const genreDescriptions = {
-            'ngon-tinh': 'ngôn tình lãng mạn, tình cảm sâu sắc, câu chuyện tình yêu đẹp',
-            'sac-hiep': 'sắc hiệp võ thuật, giang hồ nghĩa khí, võ công cao cường',
-            'tien-hiep': 'tiên hiệp huyền ảo, tu luyện thành tiên, pháp thuật huyền bí'
-        };
-        
-        const lengthInstructions = {
-            'short': 'Viết đoạn ngắn khoảng 200-400 từ',
-            'medium': 'Viết đoạn trung bình khoảng 400-800 từ',
-            'long': 'Viết đoạn dài khoảng 800-1500 từ'
-        };
-        
-        return `${systemPrompt}
+[ĐẢM BẢO KẾT QUẢ CUỐI CÙNG PHẢI HOÀN TOÀN BẰNG TIẾNG VIỆT, KHÔNG CHẤP NHẬN BẤT KỲ TỪ NGỮ, KÝ TỰ, HAY CẤU TRÚC CÂU NÀO KHÔNG PHẢI TIẾNG VIỆT. Chất lượng sáng tác phải CAO NHẤT, TỰ NHIÊN NHẤT, và 'GÂY NGHIỆN' NHẤT cho độc giả Việt Nam.]
 
-Hãy viết một câu chuyện ${genreDescriptions[genre]} dựa trên ý tưởng sau: "${userPrompt}"
-
-${lengthInstructions[length]}, với văn phong cuốn hút, hấp dẫn, tạo sự tò mò cho độc giả muốn đọc tiếp.
+${fullPrompt}
 
 Định dạng trả về:
 TITLE: [Tiêu đề hay và thu hút]
 CONTENT: [Nội dung truyện]
 
 Lưu ý: Viết hoàn toàn bằng tiếng Việt, văn phong tự nhiên, hấp dẫn và phù hợp với thể loại đã chọn.`;
+
+        return systemPrompt;
     }
     
     buildContinuePrompt(currentContent) {
@@ -262,12 +409,48 @@ Hãy viết đoạn tiếp theo (400-800 từ) với:
 Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
     }
     
-    async generateStory(prompt) {
+    async generateStory(prompt, genre = 'ngon-tinh') {
         if (!this.apiKey) {
             throw new Error('Vui lòng cài đặt Gemini API Key trước khi sử dụng');
         }
         
         try {
+            const safetySettings = genre === 'sac-hiep' ? [
+                {
+                    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    threshold: "BLOCK_NONE" // Try to bypass safety for adult content
+                },
+                {
+                    category: "HARM_CATEGORY_HARASSMENT", 
+                    threshold: "BLOCK_NONE"
+                },
+                {
+                    category: "HARM_CATEGORY_HATE_SPEECH",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                },
+                {
+                    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                }
+            ] : [
+                {
+                    category: "HARM_CATEGORY_HARASSMENT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                },
+                {
+                    category: "HARM_CATEGORY_HATE_SPEECH",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                },
+                {
+                    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                },
+                {
+                    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                }
+            ];
+            
             const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent', {
                 method: 'POST',
                 headers: {
@@ -281,29 +464,12 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
                         }]
                     }],
                     generationConfig: {
-                        temperature: 0.9,
-                        topK: 1,
-                        topP: 1,
+                        temperature: genre === 'sac-hiep' ? 0.9 : 0.8, // Higher temp for adult content
+                        topK: 40,
+                        topP: 0.95,
                         maxOutputTokens: 2048,
                     },
-                    safetySettings: [
-                        {
-                            category: "HARM_CATEGORY_HARASSMENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_HATE_SPEECH",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                        }
-                    ]
+                    safetySettings: safetySettings
                 })
             });
             
@@ -315,6 +481,10 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
             const data = await response.json();
             
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                // Check if content was blocked
+                if (data.promptFeedback && data.promptFeedback.blockReason) {
+                    throw new Error('CONTENT_BLOCKED');
+                }
                 throw new Error('Không nhận được phản hồi hợp lệ từ AI');
             }
             
@@ -328,8 +498,39 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
                 throw new Error('Đã vượt quá giới hạn sử dụng API. Vui lòng thử lại sau.');
             } else if (error.message.includes('RATE_LIMIT_EXCEEDED')) {
                 throw new Error('Quá nhiều yêu cầu. Vui lòng chờ một chút và thử lại.');
+            } else if (error.message === 'CONTENT_BLOCKED') {
+                throw new Error('CONTENT_BLOCKED');
             }
             
+            throw error;
+        }
+    }
+    
+    // Fallback strategies cho adult content
+    async generateStoryWithFallback(genre, prompt, length, characterName, attempt = 0) {
+        const fallbackStrategies = [
+            'psychology',
+            'literary', 
+            'tension',
+            'romance'
+        ];
+        
+        if (attempt >= fallbackStrategies.length) {
+            throw new Error('Không thể tạo nội dung này. Vui lòng thử ý tưởng khác.');
+        }
+        
+        try {
+            let basePrompt = this.generateStoryPrompt(genre, prompt, length, characterName);
+            let enhancedPrompt = this.generateAdultPrompt(basePrompt, fallbackStrategies[attempt]);
+            
+            // Make request with current strategy
+            const response = await this.generateStory(enhancedPrompt, genre);
+            return response;
+        } catch (error) {
+            if (error.message === 'CONTENT_BLOCKED') {
+                // Try next strategy
+                return await this.generateStoryWithFallback(genre, prompt, length, characterName, attempt + 1);
+            }
             throw error;
         }
     }
@@ -385,6 +586,7 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
         const genre = document.getElementById('storyGenre').value;
         const length = document.getElementById('storyLength').value;
         const userPrompt = document.getElementById('storyPrompt').value.trim();
+        const characterName = document.getElementById('mainCharacter').value.trim(); // NEW
         
         if (!genre || !userPrompt) {
             this.showToast('Vui lòng chọn thể loại và nhập ý tưởng truyện', 'warning');
@@ -402,8 +604,21 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
             this.showLoading(true);
             this.setButtonLoading('generateBtn', true);
             
-            const prompt = this.buildInitialPrompt(genre, userPrompt, length);
-            const response = await this.generateStory(prompt);
+            const prompt = this.buildInitialPrompt(genre, userPrompt, length, characterName);
+            let response;
+            
+            try {
+                response = await this.generateStory(prompt, genre);
+            } catch (error) {
+                if (error.message === 'CONTENT_BLOCKED' && genre === 'sac-hiep') {
+                    // Handle safety blocks for adult content with fallback
+                    this.showToast('Nội dung bị chặn. Đang thử cách khác...', 'warning');
+                    response = await this.generateStoryWithFallback(genre, userPrompt, length, characterName);
+                } else {
+                    throw error;
+                }
+            }
+            
             const parsed = this.parseStoryResponse(response);
             
             this.currentStory = {
@@ -413,6 +628,7 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
                 genre: genre,
                 length: length,
                 originalPrompt: userPrompt,
+                characterName: characterName, // Store character name
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -446,7 +662,19 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
             
             const currentContent = this.currentStory.content.join('\n\n');
             const prompt = this.buildContinuePrompt(currentContent);
-            const response = await this.generateStory(prompt);
+            
+            let response;
+            try {
+                response = await this.generateStory(prompt, this.currentStory.genre);
+            } catch (error) {
+                if (error.message === 'CONTENT_BLOCKED' && this.currentStory.genre === 'sac-hiep') {
+                    // Try fallback for continue story
+                    const enhancedPrompt = this.enhancePromptForAdultContent(prompt);
+                    response = await this.generateStory(enhancedPrompt, this.currentStory.genre);
+                } else {
+                    throw error;
+                }
+            }
             
             this.currentStory.content.push(response.trim());
             this.currentStory.updatedAt = new Date().toISOString();
@@ -499,6 +727,7 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
         
         // Reset to default selections
         document.getElementById('storyLength').value = 'medium';
+        document.getElementById('mainCharacter').value = ''; // Clear character name
     }
     
     saveCurrentStory() {

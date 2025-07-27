@@ -21,6 +21,10 @@
             <div class="logo">
                 <i class="fas fa-feather-alt"></i>
                 <h1>AI Story Writer</h1>
+                <div class="author-info">
+                    <span class="author-label">Tác giả:</span>
+                    <span class="author-name">Thái Bình Dương</span>
+                </div>
             </div>
             
             <!-- User Authentication -->
@@ -129,6 +133,19 @@
                                     required
                                     rows="4"
                                 ></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="mainCharacter">Tên nhân vật chính (tùy chọn):</label>
+                                <input 
+                                    type="text" 
+                                    id="mainCharacter" 
+                                    placeholder="VD: Minh Anh, Hoàng Long, Linh Chi..."
+                                    maxlength="50"
+                                >
+                                <small class="help-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    Để trống nếu muốn AI tự tạo tên nhân vật
+                                </small>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="btn btn-primary" id="generateBtn">
