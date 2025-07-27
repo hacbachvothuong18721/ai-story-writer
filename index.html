@@ -22,10 +22,29 @@
                 <i class="fas fa-feather-alt"></i>
                 <h1>AI Story Writer</h1>
             </div>
-            <button class="settings-btn" id="settingsBtn">
-                <i class="fas fa-cog"></i>
-                <span>Cài đặt</span>
-            </button>
+            <div class="header-actions">
+                <button class="auth-btn" id="loginBtn" style="display: none;">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Đăng nhập</span>
+                </button>
+                <div class="profile-dropdown" id="profileDropdown" style="display: none;">
+                    <button class="profile-btn" id="profileBtn">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="userName">Người dùng</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="#" id="profileLink"><i class="fas fa-user"></i> Hồ sơ</a>
+                        <a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
+                    </div>
+                </div>
+                <button class="settings-btn" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                    <span>Cài đặt</span>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -62,6 +81,115 @@
 
     <!-- Settings Overlay -->
     <div class="settings-overlay" id="settingsOverlay"></div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModalOverlay">
+        <div class="modal" id="loginModal">
+            <div class="modal-header">
+                <h3><i class="fas fa-sign-in-alt"></i> Đăng nhập</h3>
+                <button class="close-btn" id="closeLoginBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email:</label>
+                        <input type="email" id="loginEmail" required placeholder="Nhập email của bạn">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Mật khẩu:</label>
+                        <input type="password" id="loginPassword" required placeholder="Nhập mật khẩu">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Đăng nhập
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="showRegisterBtn">
+                            Tạo tài khoản mới
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal-overlay" id="registerModalOverlay">
+        <div class="modal" id="registerModal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Tạo tài khoản</h3>
+                <button class="close-btn" id="closeRegisterBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerName">Tên hiển thị:</label>
+                        <input type="text" id="registerName" required placeholder="Nhập tên hiển thị">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email:</label>
+                        <input type="email" id="registerEmail" required placeholder="Nhập email của bạn">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Mật khẩu:</label>
+                        <input type="password" id="registerPassword" required placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Xác nhận mật khẩu:</label>
+                        <input type="password" id="confirmPassword" required placeholder="Nhập lại mật khẩu">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i>
+                            Tạo tài khoản
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="showLoginBtn">
+                            Đã có tài khoản
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Age Verification Modal -->
+    <div class="modal-overlay" id="ageVerificationOverlay">
+        <div class="modal warning-modal" id="ageVerificationModal">
+            <div class="modal-header warning">
+                <h3><i class="fas fa-exclamation-triangle"></i> Cảnh báo nội dung 18+</h3>
+            </div>
+            <div class="modal-content">
+                <div class="warning-content">
+                    <div class="warning-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h4>Nội dung dành cho người lớn</h4>
+                    <p>Thể loại "Sắc hiệp" có thể chứa nội dung tình dục rõ ràng và chỉ dành cho người từ 18 tuổi trở lên.</p>
+                    <div class="age-verification">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="ageConfirmCheck">
+                            <span class="checkmark"></span>
+                            Tôi xác nhận đã đủ 18 tuổi và đồng ý xem nội dung người lớn
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="confirmAgeBtn" disabled>
+                            <i class="fas fa-check"></i>
+                            Xác nhận
+                        </button>
+                        <button class="btn btn-secondary" id="cancelAgeBtn">
+                            <i class="fas fa-times"></i>
+                            Hủy bỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <main class="main-content">

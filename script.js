@@ -5,6 +5,9 @@ class AIStoryWriter {
         this.currentStory = null;
         this.stories = [];
         this.isGenerating = false;
+        this.isLoggedIn = false;
+        this.currentUser = null;
+        this.ageVerified = false;
         
         // Initialize application
         this.init();
@@ -15,6 +18,7 @@ class AIStoryWriter {
         this.setupEventListeners();
         this.setupKeyboardShortcuts();
         this.renderHistory();
+        this.updateAuthUI();
         
         // Show welcome message if no API key
         if (!this.apiKey) {
@@ -28,6 +32,14 @@ class AIStoryWriter {
             this.apiKey = localStorage.getItem('ai-story-writer-api-key') || '';
             const storedStories = localStorage.getItem('ai-story-writer-stories');
             this.stories = storedStories ? JSON.parse(storedStories) : [];
+            this.ageVerified = localStorage.getItem('ai-story-writer-age-verified') === 'true';
+            
+            // Load mock user data (in real implementation, this would be from auth service)
+            const storedUser = localStorage.getItem('ai-story-writer-user');
+            if (storedUser) {
+                this.currentUser = JSON.parse(storedUser);
+                this.isLoggedIn = true;
+            }
             
             if (this.apiKey) {
                 document.getElementById('apiKey').value = this.apiKey;
@@ -88,6 +100,48 @@ class AIStoryWriter {
         document.getElementById('settingsOverlay').addEventListener('click', () => this.closeSettings());
         document.getElementById('saveApiKey').addEventListener('click', () => this.saveApiKey());
         document.getElementById('toggleApiKey').addEventListener('click', () => this.toggleApiKeyVisibility());
+        
+        // Authentication
+        document.getElementById('loginBtn').addEventListener('click', () => this.openLoginModal());
+        document.getElementById('closeLoginBtn').addEventListener('click', () => this.closeLoginModal());
+        document.getElementById('loginModalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) this.closeLoginModal();
+        });
+        document.getElementById('showRegisterBtn').addEventListener('click', () => this.switchToRegister());
+        document.getElementById('closeRegisterBtn').addEventListener('click', () => this.closeRegisterModal());
+        document.getElementById('registerModalOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) this.closeRegisterModal();
+        });
+        document.getElementById('showLoginBtn').addEventListener('click', () => this.switchToLogin());
+        document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
+        document.getElementById('registerForm').addEventListener('submit', (e) => this.handleRegister(e));
+        document.getElementById('logoutBtn').addEventListener('click', () => this.handleLogout());
+        
+        // Profile dropdown
+        document.getElementById('profileBtn').addEventListener('click', () => this.toggleProfileDropdown());
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.profile-dropdown')) {
+                this.closeProfileDropdown();
+            }
+        });
+        
+        // Age verification
+        document.getElementById('ageConfirmCheck').addEventListener('change', (e) => {
+            document.getElementById('confirmAgeBtn').disabled = !e.target.checked;
+        });
+        document.getElementById('confirmAgeBtn').addEventListener('click', () => this.confirmAge());
+        document.getElementById('cancelAgeBtn').addEventListener('click', () => this.cancelAgeVerification());
+        document.getElementById('ageVerificationOverlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) this.cancelAgeVerification();
+        });
+        
+        // Story generation with age verification check
+        document.getElementById('storyGenre').addEventListener('change', (e) => {
+            if (e.target.value === 'sac-hiep' && !this.ageVerified) {
+                this.showAgeVerification();
+                e.target.value = '';
+            }
+        });
         
         // Story generation
         document.getElementById('storyForm').addEventListener('submit', (e) => this.handleStorySubmit(e));
@@ -225,7 +279,7 @@ class AIStoryWriter {
         
         const genreDescriptions = {
             'ngon-tinh': 'ngôn tình lãng mạn, tình cảm sâu sắc, câu chuyện tình yêu đẹp',
-            'sac-hiep': 'sắc hiệp võ thuật, giang hồ nghĩa khí, võ công cao cường',
+            'sac-hiep': 'sắc hiệp võ thuật, giang hồ nghĩa khí, võ công cao cường với các cảnh tình dục rõ ràng và gợi cảm phù hợp với nội dung 18+',
             'tien-hiep': 'tiên hiệp huyền ảo, tu luyện thành tiên, pháp thuật huyền bí'
         };
         
@@ -235,7 +289,21 @@ class AIStoryWriter {
             'long': 'Viết đoạn dài khoảng 800-1500 từ'
         };
         
-        return `${systemPrompt}
+        let additionalPrompt = '';
+        if (genre === 'sac-hiep') {
+            additionalPrompt = `
+[CẢNH BÁO NỘI DUNG NGƯỜI LỚN - CHỈ DÀNH CHO 18+]
+
+Bạn đang viết truyện sắc hiệp với nội dung tình dục rõ ràng. Hãy:
+- Miêu tả chi tiết các cảnh nóng bỏng, quan hệ tình dục một cách nghệ thuật
+- Sử dụng ngôn ngữ gợi cảm, khêu gợi nhưng vẫn giữ tính văn học
+- Tạo ra những tình huống lôi cuốn, kích thích phù hợp với thể loại 18+
+- Đảm bảo nội dung phù hợp với độ tuổi đã xác nhận
+- Duy trì chất lượng văn học cao và không phô bày quá mức
+`;
+        }
+        
+        return `${systemPrompt}${additionalPrompt}
 
 Hãy viết một câu chuyện ${genreDescriptions[genre]} dựa trên ý tưởng sau: "${userPrompt}"
 
@@ -376,6 +444,147 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
         return words.join(' ') + (content.split(' ').length > 8 ? '...' : '');
     }
     
+    // Authentication Management
+    updateAuthUI() {
+        const loginBtn = document.getElementById('loginBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        const userName = document.getElementById('userName');
+        
+        if (this.isLoggedIn && this.currentUser) {
+            loginBtn.style.display = 'none';
+            profileDropdown.style.display = 'block';
+            userName.textContent = this.currentUser.name;
+        } else {
+            loginBtn.style.display = 'flex';
+            profileDropdown.style.display = 'none';
+        }
+    }
+    
+    openLoginModal() {
+        document.getElementById('loginModalOverlay').classList.add('active');
+    }
+    
+    closeLoginModal() {
+        document.getElementById('loginModalOverlay').classList.remove('active');
+        document.getElementById('loginForm').reset();
+    }
+    
+    openRegisterModal() {
+        document.getElementById('registerModalOverlay').classList.add('active');
+    }
+    
+    closeRegisterModal() {
+        document.getElementById('registerModalOverlay').classList.remove('active');
+        document.getElementById('registerForm').reset();
+    }
+    
+    switchToRegister() {
+        this.closeLoginModal();
+        this.openRegisterModal();
+    }
+    
+    switchToLogin() {
+        this.closeRegisterModal();
+        this.openLoginModal();
+    }
+    
+    handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        // Mock authentication (in real implementation, this would call backend API)
+        if (email && password) {
+            this.currentUser = {
+                id: Date.now().toString(),
+                name: email.split('@')[0],
+                email: email
+            };
+            this.isLoggedIn = true;
+            
+            localStorage.setItem('ai-story-writer-user', JSON.stringify(this.currentUser));
+            this.updateAuthUI();
+            this.closeLoginModal();
+            this.showToast('Đăng nhập thành công!', 'success');
+        } else {
+            this.showToast('Vui lòng nhập đầy đủ thông tin', 'warning');
+        }
+    }
+    
+    handleRegister(e) {
+        e.preventDefault();
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (password !== confirmPassword) {
+            this.showToast('Mật khẩu xác nhận không khớp', 'error');
+            return;
+        }
+        
+        if (password.length < 6) {
+            this.showToast('Mật khẩu phải có ít nhất 6 ký tự', 'error');
+            return;
+        }
+        
+        // Mock registration (in real implementation, this would call backend API)
+        this.currentUser = {
+            id: Date.now().toString(),
+            name: name,
+            email: email
+        };
+        this.isLoggedIn = true;
+        
+        localStorage.setItem('ai-story-writer-user', JSON.stringify(this.currentUser));
+        this.updateAuthUI();
+        this.closeRegisterModal();
+        this.showToast('Tạo tài khoản thành công!', 'success');
+    }
+    
+    handleLogout() {
+        this.currentUser = null;
+        this.isLoggedIn = false;
+        this.ageVerified = false;
+        
+        localStorage.removeItem('ai-story-writer-user');
+        localStorage.removeItem('ai-story-writer-age-verified');
+        
+        this.updateAuthUI();
+        this.closeProfileDropdown();
+        this.showToast('Đã đăng xuất', 'info');
+    }
+    
+    toggleProfileDropdown() {
+        const dropdown = document.getElementById('dropdownMenu');
+        dropdown.classList.toggle('show');
+    }
+    
+    closeProfileDropdown() {
+        const dropdown = document.getElementById('dropdownMenu');
+        dropdown.classList.remove('show');
+    }
+    
+    // Age Verification System
+    showAgeVerification() {
+        document.getElementById('ageVerificationOverlay').classList.add('active');
+        document.getElementById('ageConfirmCheck').checked = false;
+        document.getElementById('confirmAgeBtn').disabled = true;
+    }
+    
+    confirmAge() {
+        this.ageVerified = true;
+        localStorage.setItem('ai-story-writer-age-verified', 'true');
+        document.getElementById('ageVerificationOverlay').classList.remove('active');
+        document.getElementById('storyGenre').value = 'sac-hiep';
+        this.showToast('Đã xác nhận độ tuổi. Bạn có thể chọn thể loại Sắc hiệp.', 'success');
+    }
+    
+    cancelAgeVerification() {
+        document.getElementById('ageVerificationOverlay').classList.remove('active');
+        document.getElementById('storyGenre').value = '';
+    }
+
     // Story Management
     async handleStorySubmit(e) {
         e.preventDefault();
