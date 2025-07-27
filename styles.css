@@ -495,21 +495,72 @@ body {
 }
 
 .story-content {
-    max-height: 60vh;
+    max-height: 70vh;
     overflow-y: auto;
     margin-bottom: 2rem;
     padding-right: 1rem;
+    
+    /* Better scrolling */
+    scroll-behavior: smooth;
 }
 
+/* Custom scrollbar for story content */
+.story-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.story-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.story-content::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 3px;
+}
+
+.story-content::-webkit-scrollbar-thumb:hover {
+    background: #00b894;
+}
+
+/* Story paragraph styling with better readability */
 .story-paragraph {
     margin-bottom: 1.5rem;
     padding: 1.5rem;
     background: rgba(255, 255, 255, 0.05);
     border-radius: var(--border-radius-small);
     border-left: 4px solid var(--accent-color);
-    line-height: 1.8;
+    
+    /* Enhanced typography */
+    line-height: 1.8;           /* Increased line spacing */
     font-size: 1rem;
+    letter-spacing: 0.3px;      /* Better letter spacing */
+    text-align: justify;        /* Justified text alignment */
+    word-spacing: 0.1em;        /* Improved word spacing */
+    
+    /* Better readability */
+    color: var(--text-primary);
+    font-weight: 400;
+    
+    /* Smooth animations */
     animation: fadeInUp 0.6s ease;
+    transition: var(--transition);
+}
+
+.story-paragraph:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(4px);
+}
+
+.story-paragraph:last-child {
+    margin-bottom: 0;
+}
+
+/* Special formatting for dialogue */
+.story-paragraph:has-text("""), 
+.story-paragraph:has-text("—") {
+    border-left-color: #ffd93d;
+    font-style: italic;
 }
 
 @keyframes fadeInUp {
