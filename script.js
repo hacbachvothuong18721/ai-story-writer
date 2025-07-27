@@ -370,7 +370,6 @@ STYLE GUIDELINES:
     }
 
     buildInitialPrompt(genre, userPrompt, length, characterName = '') {
-    buildInitialPrompt(genre, userPrompt, length, characterName = '') {
         let fullPrompt = this.generateStoryPrompt(genre, userPrompt, length, characterName);
         
         // Special handling for adult content
