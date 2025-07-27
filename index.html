@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Story Writer - Ứng dụng viết truyện tương tác</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-feather-alt"></i>
+                <h1>AI Story Writer</h1>
+            </div>
+            <button class="settings-btn" id="settingsBtn">
+                <i class="fas fa-cog"></i>
+                <span>Cài đặt</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3><i class="fas fa-cog"></i> Cài đặt</h3>
+            <button class="close-btn" id="closeSettingsBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="settings-content">
+            <div class="setting-group">
+                <label for="apiKey">Gemini API Key:</label>
+                <div class="input-group">
+                    <input type="password" id="apiKey" placeholder="Nhập Gemini API Key của bạn...">
+                    <button class="toggle-visibility" id="toggleApiKey">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <small class="help-text">
+                    <i class="fas fa-info-circle"></i>
+                    Lấy API key miễn phí tại <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                </small>
+            </div>
+            <div class="setting-group">
+                <button class="btn btn-primary" id="saveApiKey">
+                    <i class="fas fa-save"></i>
+                    Lưu API Key
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settingsOverlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Story Creation Form -->
+            <section class="story-form-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-magic"></i> Tạo truyện mới</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="storyForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="storyGenre">Thể loại:</label>
+                                    <select id="storyGenre" required>
+                                        <option value="">Chọn thể loại</option>
+                                        <option value="ngon-tinh">Ngôn tình</option>
+                                        <option value="sac-hiep">Sắc hiệp</option>
+                                        <option value="tien-hiep">Tiên hiệp</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="storyLength">Độ dài đoạn:</label>
+                                    <select id="storyLength" required>
+                                        <option value="short">Ngắn (200-400 từ)</option>
+                                        <option value="medium" selected>Trung bình (400-800 từ)</option>
+                                        <option value="long">Dài (800-1500 từ)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="storyPrompt">Ý tưởng cho truyện:</label>
+                                <textarea 
+                                    id="storyPrompt" 
+                                    placeholder="Mô tả ý tưởng, nhân vật, bối cảnh hoặc tình huống bạn muốn viết thành truyện..."
+                                    required
+                                    rows="4"
+                                ></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary" id="generateBtn">
+                                    <i class="fas fa-magic"></i>
+                                    <span>Tạo truyện</span>
+                                    <div class="loading-spinner" id="generateSpinner"></div>
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="newStoryBtn">
+                                    <i class="fas fa-plus"></i>
+                                    Truyện mới
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Story Display -->
+            <section class="story-display-section" id="storyDisplaySection">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 id="storyTitle">Tiêu đề truyện</h3>
+                        <div class="story-actions">
+                            <button class="btn btn-icon" id="exportBtn" title="Xuất file (Ctrl+S)">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="btn btn-icon" id="saveStoryBtn" title="Lưu truyện">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="story-content" id="storyContent">
+                            <!-- Story content will be populated here -->
+                        </div>
+                        <div class="story-controls">
+                            <button class="btn btn-primary" id="continueBtn">
+                                <i class="fas fa-forward"></i>
+                                <span>Tiếp tục câu chuyện</span>
+                                <div class="loading-spinner" id="continueSpinner"></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Story History -->
+            <section class="story-history-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-history"></i> Lịch sử truyện</h3>
+                        <button class="btn btn-icon" id="clearHistoryBtn" title="Xóa lịch sử">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="history-list" id="historyList">
+                            <div class="empty-state">
+                                <i class="fas fa-book-open"></i>
+                                <p>Chưa có truyện nào. Hãy tạo truyện đầu tiên của bạn!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner large"></div>
+            <p>Đang tạo truyện...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
