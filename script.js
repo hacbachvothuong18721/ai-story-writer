@@ -230,36 +230,47 @@ class AIStoryWriter {
         };
         
         const lengthInstructions = {
-            'short': 'Viết đoạn ngắn khoảng 200-400 từ',
-            'medium': 'Viết đoạn trung bình khoảng 400-800 từ',
-            'long': 'Viết đoạn dài khoảng 800-1500 từ'
+            'short': 'Viết 2-3 đoạn văn ngắn (200-400 từ)',
+            'medium': 'Viết 3-5 đoạn văn trung bình (400-800 từ)', 
+            'long': 'Viết 5-8 đoạn văn dài (800-1500 từ)'
         };
         
         return `${systemPrompt}
 
-Hãy viết một câu chuyện ${genreDescriptions[genre]} dựa trên ý tưởng sau: "${userPrompt}"
+${lengthInstructions[length]}. 
 
-${lengthInstructions[length]}, với văn phong cuốn hút, hấp dẫn, tạo sự tò mò cho độc giả muốn đọc tiếp.
+QUAN TRỌNG - FORMATTING RULES:
+- Viết các câu hoàn chỉnh với dấu câu rõ ràng
+- Mỗi đoạn văn 2-4 câu
+- Sử dụng ngôn ngữ Tiếng Việt tự nhiên
+- Tạo không gian trống giữa các đoạn ý
+- Miêu tả chi tiết cảnh vật, tâm lý nhân vật
+
+Thể loại: ${genreDescriptions[genre]}
+
+Viết truyện dựa trên ý tưởng: "${userPrompt}"
 
 Định dạng trả về:
 TITLE: [Tiêu đề hay và thu hút]
 CONTENT: [Nội dung truyện]
 
-Lưu ý: Viết hoàn toàn bằng tiếng Việt, văn phong tự nhiên, hấp dẫn và phù hợp với thể loại đã chọn.`;
+Hãy bắt đầu câu chuyện một cách hấp dẫn và tạo ra nội dung chất lượng cao.`;
     }
     
     buildContinuePrompt(currentContent) {
-        return `Dựa trên nội dung truyện hiện tại, hãy tiếp tục viết đoạn tiếp theo với cùng phong cách và nhân vật. Đảm bảo sự liên kết mạch lạc và phát triển cốt truyện hấp dẫn:
+        return `Tiếp tục câu chuyện này một cách tự nhiên và hấp dẫn.
 
-${currentContent}
-
-Hãy viết đoạn tiếp theo (400-800 từ) với:
-- Duy trì phong cách và tone của truyện
-- Phát triển cốt truyện hợp lý
-- Tạo tình huống hấp dẫn, kích thích tò mò
+FORMATTING RULES:
+- Viết 2-4 đoạn văn tiếp theo
+- Mỗi đoạn 2-4 câu hoàn chỉnh  
+- Phát triển cốt truyện một cách logic
+- Giữ tính nhất quán với nội dung trước
 - Sử dụng hoàn toàn tiếng Việt tự nhiên
 
-Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
+Nội dung hiện tại:
+"${currentContent.slice(-500)}..."
+
+Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
     }
     
     async generateStory(prompt) {
@@ -376,6 +387,98 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
         return words.join(' ') + (content.split(' ').length > 8 ? '...' : '');
     }
     
+    // Advanced text formatting with Vietnamese support
+    formatVietnameseStory(text) {
+        if (!text) return [];
+        
+        // Clean up text
+        text = text.trim()
+            .replace(/\s+/g, ' ')           // Multiple spaces -> single space
+            .replace(/\n+/g, ' ')           // Multiple newlines -> single space
+            .replace(/([.!?])\s*([A-ZÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬEÉÈẺẼẸÊẾỀỂỄỆIÍÌỈĨỊOÓÒỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢUÚÙỦŨỤƯỨỪỬỮỰYÝỲỶỸỴ])/g, '$1\n\n$2'); // Sentence break
+        
+        // Split into sentences
+        const sentences = text.split(/([.!?…]+)\s*/);
+        let formattedParagraphs = [];
+        let currentParagraph = '';
+        let sentenceCount = 0;
+        
+        for (let i = 0; i < sentences.length; i += 2) {
+            const sentence = sentences[i];
+            const punctuation = sentences[i + 1] || '';
+            
+            if (sentence && sentence.trim()) {
+                currentParagraph += sentence.trim() + punctuation;
+                sentenceCount++;
+                
+                // Create paragraph break conditions
+                const shouldBreak = sentenceCount >= 2 && (
+                    sentenceCount >= 4 || // Max 4 sentences per paragraph
+                    Math.random() > 0.4 || // Random break 60% chance
+                    sentence.length > 150 || // Long sentence break
+                    /[""]/.test(sentence) // Dialogue break
+                );
+                
+                if (shouldBreak) {
+                    formattedParagraphs.push(currentParagraph.trim());
+                    currentParagraph = '';
+                    sentenceCount = 0;
+                } else {
+                    currentParagraph += ' ';
+                }
+            }
+        }
+        
+        // Add remaining content
+        if (currentParagraph.trim()) {
+            formattedParagraphs.push(currentParagraph.trim());
+        }
+        
+        // Filter empty paragraphs and ensure minimum length
+        return formattedParagraphs.filter(p => p.length > 10);
+    }
+    
+    // Format story text into readable paragraphs  
+    formatStoryText(text) {
+        if (!text) return '';
+        
+        // Remove excessive whitespace
+        text = text.trim().replace(/\s+/g, ' ');
+        
+        // Split by sentence endings and create paragraphs
+        const sentences = text.split(/([.!?]+\s*)/);
+        let formattedText = '';
+        let currentParagraph = '';
+        let sentenceCount = 0;
+        
+        for (let i = 0; i < sentences.length; i++) {
+            const part = sentences[i];
+            
+            if (part.match(/[.!?]+\s*/)) {
+                // This is punctuation + space
+                currentParagraph += part;
+                sentenceCount++;
+                
+                // Create new paragraph every 2-3 sentences
+                if (sentenceCount >= 2 && Math.random() > 0.3) {
+                    formattedText += currentParagraph.trim() + '\n\n';
+                    currentParagraph = '';
+                    sentenceCount = 0;
+                }
+            } else if (part.trim()) {
+                // This is sentence content
+                currentParagraph += part;
+            }
+        }
+        
+        // Add remaining content
+        if (currentParagraph.trim()) {
+            formattedText += currentParagraph.trim();
+        }
+        
+        return formattedText.trim();
+    }
+    
     // Story Management
     async handleStorySubmit(e) {
         e.preventDefault();
@@ -406,10 +509,13 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
             const response = await this.generateStory(prompt);
             const parsed = this.parseStoryResponse(response);
             
+            // FORMAT TEXT INTO PARAGRAPHS
+            const formattedParagraphs = this.formatVietnameseStory(parsed.content);
+            
             this.currentStory = {
                 id: Date.now().toString(),
                 title: parsed.title,
-                content: [parsed.content],
+                content: formattedParagraphs,
                 genre: genre,
                 length: length,
                 originalPrompt: userPrompt,
@@ -448,7 +554,11 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
             const prompt = this.buildContinuePrompt(currentContent);
             const response = await this.generateStory(prompt);
             
-            this.currentStory.content.push(response.trim());
+            // FORMAT CONTINUATION TEXT
+            const formattedParagraphs = this.formatVietnameseStory(response.trim());
+            
+            // Add formatted paragraphs to existing content
+            this.currentStory.content.push(...formattedParagraphs);
             this.currentStory.updatedAt = new Date().toISOString();
             
             this.displayStory();
@@ -474,18 +584,24 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
         title.textContent = this.currentStory.title;
         content.innerHTML = '';
         
+        // Display each paragraph with animation delay
         this.currentStory.content.forEach((paragraph, index) => {
             const div = document.createElement('div');
             div.className = 'story-paragraph';
             div.textContent = paragraph;
-            content.appendChild(div);
             
-            // Scroll to new paragraph
-            if (index === this.currentStory.content.length - 1) {
-                setTimeout(() => {
-                    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 100);
-            }
+            // Add delay for animation
+            setTimeout(() => {
+                content.appendChild(div);
+                
+                // Scroll to new content if this is the last paragraph and there are multiple
+                if (index === this.currentStory.content.length - 1 && this.currentStory.content.length > 1) {
+                    div.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'end' 
+                    });
+                }
+            }, index * 100);
         });
         
         section.classList.add('visible');
