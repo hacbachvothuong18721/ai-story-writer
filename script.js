@@ -671,4 +671,214 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề.`;
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new AIStoryWriter();
+    
+    // Initialize new authentication and age verification systems
+    window.authManager = new AuthManager();
+    window.ageVerification = new AgeVerification();
 });
+
+// User Authentication System
+class AuthManager {
+    constructor() {
+        this.currentUser = null;
+        this.initializeAuthUI();
+        this.checkStoredAuth();
+    }
+
+    initializeAuthUI() {
+        // Authentication event listeners
+        document.getElementById('loginBtn')?.addEventListener('click', () => this.showLoginModal());
+        document.getElementById('registerBtn')?.addEventListener('click', () => this.showRegisterModal());
+        document.getElementById('logoutBtn')?.addEventListener('click', () => this.logout());
+        
+        // Modal controls
+        document.getElementById('closeLoginModal')?.addEventListener('click', () => this.hideAuthModals());
+        document.getElementById('closeRegisterModal')?.addEventListener('click', () => this.hideAuthModals());
+        document.getElementById('switchToRegister')?.addEventListener('click', () => this.switchToRegister());
+        document.getElementById('switchToLogin')?.addEventListener('click', () => this.switchToLogin());
+        
+        // Form submissions
+        document.getElementById('loginForm')?.addEventListener('submit', (e) => this.handleLogin(e));
+        document.getElementById('registerForm')?.addEventListener('submit', (e) => this.handleRegister(e));
+        
+        // Close modal on overlay click
+        document.getElementById('authModalOverlay')?.addEventListener('click', (e) => {
+            if (e.target.id === 'authModalOverlay') {
+                this.hideAuthModals();
+            }
+        });
+    }
+
+    checkStoredAuth() {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            this.currentUser = JSON.parse(storedUser);
+            this.updateAuthUI();
+        }
+    }
+
+    showLoginModal() {
+        document.getElementById('authModalOverlay').classList.remove('hidden');
+        document.getElementById('loginModal').classList.remove('hidden');
+        document.getElementById('registerModal').classList.add('hidden');
+    }
+
+    showRegisterModal() {
+        document.getElementById('authModalOverlay').classList.remove('hidden');
+        document.getElementById('registerModal').classList.remove('hidden');
+        document.getElementById('loginModal').classList.add('hidden');
+    }
+
+    hideAuthModals() {
+        document.getElementById('authModalOverlay').classList.add('hidden');
+        // Reset forms
+        document.getElementById('loginForm')?.reset();
+        document.getElementById('registerForm')?.reset();
+    }
+
+    switchToRegister() {
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('registerModal').classList.remove('hidden');
+    }
+
+    switchToLogin() {
+        document.getElementById('registerModal').classList.add('hidden');
+        document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    async handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        // Mock authentication - replace with real backend
+        if (email && password) {
+            this.currentUser = {
+                id: Date.now(),
+                name: email.split('@')[0],
+                email: email,
+                loginTime: new Date().toISOString()
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            this.updateAuthUI();
+            this.hideAuthModals();
+            this.showToast('Đăng nhập thành công!', 'success');
+        }
+    }
+
+    async handleRegister(e) {
+        e.preventDefault();
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (password !== confirmPassword) {
+            this.showToast('Mật khẩu xác nhận không khớp!', 'error');
+            return;
+        }
+        
+        // Mock registration - replace with real backend
+        this.currentUser = {
+            id: Date.now(),
+            name: name,
+            email: email,
+            registerTime: new Date().toISOString()
+        };
+        
+        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        this.updateAuthUI();
+        this.hideAuthModals();
+        this.showToast('Đăng ký thành công!', 'success');
+    }
+
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem('currentUser');
+        this.updateAuthUI();
+        this.showToast('Đã đăng xuất!', 'info');
+    }
+
+    updateAuthUI() {
+        const authButtons = document.getElementById('authButtons');
+        const userProfile = document.getElementById('userProfile');
+        const userName = document.getElementById('userName');
+        
+        if (this.currentUser) {
+            authButtons.classList.add('hidden');
+            userProfile.classList.remove('hidden');
+            userName.textContent = this.currentUser.name;
+        } else {
+            authButtons.classList.remove('hidden');
+            userProfile.classList.add('hidden');
+        }
+    }
+
+    showToast(message, type = 'info') {
+        // Use existing toast system
+        if (window.app && window.app.showToast) {
+            window.app.showToast(message, type);
+        }
+    }
+}
+
+// Age Verification for Sắc hiệp
+class AgeVerification {
+    constructor() {
+        this.isVerified = localStorage.getItem('ageVerified') === 'true';
+        this.initializeAgeVerification();
+    }
+
+    initializeAgeVerification() {
+        // Listen for genre selection
+        document.getElementById('storyGenre')?.addEventListener('change', (e) => {
+            if (e.target.value === 'sac-hiep' && !this.isVerified) {
+                this.showAgeVerificationModal();
+            }
+        });
+
+        // Age verification modal controls
+        document.getElementById('ageConfirmCheckbox')?.addEventListener('change', (e) => {
+            document.getElementById('confirmAgeBtn').disabled = !e.target.checked;
+        });
+
+        document.getElementById('confirmAgeBtn')?.addEventListener('click', () => this.confirmAge());
+        document.getElementById('cancelAgeBtn')?.addEventListener('click', () => this.cancelAge());
+        
+        // Close modal on overlay click
+        document.getElementById('ageVerificationOverlay')?.addEventListener('click', (e) => {
+            if (e.target.id === 'ageVerificationOverlay') {
+                this.cancelAge();
+            }
+        });
+    }
+
+    showAgeVerificationModal() {
+        document.getElementById('ageVerificationOverlay').classList.remove('hidden');
+    }
+
+    hideAgeVerificationModal() {
+        document.getElementById('ageVerificationOverlay').classList.add('hidden');
+        // Reset form
+        document.getElementById('ageConfirmCheckbox').checked = false;
+        document.getElementById('confirmAgeBtn').disabled = true;
+    }
+
+    confirmAge() {
+        this.isVerified = true;
+        localStorage.setItem('ageVerified', 'true');
+        this.hideAgeVerificationModal();
+        if (window.app && window.app.showToast) {
+            window.app.showToast('Đã xác nhận độ tuổi. Bạn có thể tạo nội dung sắc hiệp.', 'success');
+        }
+    }
+
+    cancelAge() {
+        document.getElementById('storyGenre').value = '';
+        this.hideAgeVerificationModal();
+        if (window.app && window.app.showToast) {
+            window.app.showToast('Đã hủy chọn thể loại sắc hiệp.', 'info');
+        }
+    }
+}
