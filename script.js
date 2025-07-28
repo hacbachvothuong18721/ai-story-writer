@@ -1,46 +1,34 @@
-// AI Story Writer - Main Application Script
+// AI Story Writer - Clean Implementation
 class AIStoryWriter {
     constructor() {
         this.apiKey = '';
         this.currentStory = null;
-        this.stories = [];
         this.isGenerating = false;
         
-        // Initialize application
         this.init();
     }
     
     init() {
-        this.loadStoredData();
+        this.loadApiKey();
         this.setupEventListeners();
-        this.setupKeyboardShortcuts();
-        this.renderHistory();
-        
-        // Show welcome message if no API key
-        if (!this.apiKey) {
-            this.showToast('Chào mừng! Vui lòng cài đặt Gemini API Key để bắt đầu.', 'info');
-        }
+        this.showWelcomeMessage();
     }
     
     // Storage Management
-    loadStoredData() {
+    loadApiKey() {
         try {
             this.apiKey = localStorage.getItem('ai-story-writer-api-key') || '';
-            const storedStories = localStorage.getItem('ai-story-writer-stories');
-            this.stories = storedStories ? JSON.parse(storedStories) : [];
-            
             if (this.apiKey) {
-                document.getElementById('apiKey').value = this.apiKey;
+                document.getElementById('geminiApiKey').value = this.apiKey;
             }
         } catch (error) {
-            console.error('Error loading stored data:', error);
-            this.showToast('Lỗi khi tải dữ liệu đã lưu', 'error');
+            console.error('Error loading API key:', error);
         }
     }
     
     saveApiKey() {
         try {
-            const apiKeyInput = document.getElementById('apiKey');
+            const apiKeyInput = document.getElementById('geminiApiKey');
             const newApiKey = apiKeyInput.value.trim();
             
             if (!newApiKey) {
@@ -58,102 +46,74 @@ class AIStoryWriter {
         }
     }
     
-    saveStory(story) {
-        try {
-            const existingIndex = this.stories.findIndex(s => s.id === story.id);
-            if (existingIndex !== -1) {
-                this.stories[existingIndex] = story;
-            } else {
-                this.stories.unshift(story);
-            }
-            
-            // Keep only latest 20 stories
-            if (this.stories.length > 20) {
-                this.stories = this.stories.slice(0, 20);
-            }
-            
-            localStorage.setItem('ai-story-writer-stories', JSON.stringify(this.stories));
-            this.renderHistory();
-        } catch (error) {
-            console.error('Error saving story:', error);
-            this.showToast('Lỗi khi lưu truyện', 'error');
-        }
-    }
-    
     // Event Listeners
     setupEventListeners() {
         // Settings
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettings());
         document.getElementById('closeSettingsBtn').addEventListener('click', () => this.closeSettings());
-        document.getElementById('settingsOverlay').addEventListener('click', () => this.closeSettings());
-        document.getElementById('saveApiKey').addEventListener('click', () => this.saveApiKey());
-        document.getElementById('toggleApiKey').addEventListener('click', () => this.toggleApiKeyVisibility());
+        document.getElementById('cancelSettingsBtn').addEventListener('click', () => this.closeSettings());
+        document.getElementById('saveSettingsBtn').addEventListener('click', () => this.saveApiKey());
         
         // Story generation
         document.getElementById('storyForm').addEventListener('submit', (e) => this.handleStorySubmit(e));
-        document.getElementById('continueBtn').addEventListener('click', () => this.continueStory());
+        document.getElementById('continueStoryBtn').addEventListener('click', () => this.continueStory());
         document.getElementById('newStoryBtn').addEventListener('click', () => this.newStory());
         
-        // Export and save
-        document.getElementById('exportBtn').addEventListener('click', () => this.exportStory());
-        document.getElementById('saveStoryBtn').addEventListener('click', () => this.saveCurrentStory());
+        // Story actions
+        document.getElementById('copyStoryBtn').addEventListener('click', () => this.copyStory());
+        document.getElementById('downloadStoryBtn').addEventListener('click', () => this.downloadStory());
         
-        // History
-        document.getElementById('clearHistoryBtn').addEventListener('click', () => this.clearHistory());
-    }
-    
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 'Enter':
-                        e.preventDefault();
-                        if (!this.isGenerating) {
-                            if (this.currentStory) {
-                                this.continueStory();
-                            } else {
-                                document.getElementById('storyForm').dispatchEvent(new Event('submit'));
-                            }
-                        }
-                        break;
-                    case 's':
-                        e.preventDefault();
-                        if (this.currentStory) {
-                            this.exportStory();
-                        }
-                        break;
-                    case 'n':
-                        e.preventDefault();
-                        this.newStory();
-                        break;
-                }
+        // Modal overlay clicks
+        document.getElementById('settingsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') {
+                this.closeSettings();
             }
         });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
+    }
+    
+    handleKeyboardShortcuts(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case 'Enter':
+                    e.preventDefault();
+                    if (!this.isGenerating) {
+                        if (this.currentStory) {
+                            this.continueStory();
+                        } else {
+                            document.getElementById('storyForm').dispatchEvent(new Event('submit'));
+                        }
+                    }
+                    break;
+                case 's':
+                    e.preventDefault();
+                    if (this.currentStory) {
+                        this.downloadStory();
+                    }
+                    break;
+                case 'n':
+                    e.preventDefault();
+                    this.newStory();
+                    break;
+            }
+        }
     }
     
     // UI Management
     openSettings() {
-        document.getElementById('settingsPanel').classList.add('open');
-        document.getElementById('settingsOverlay').classList.add('active');
-        document.getElementById('apiKey').focus();
+        document.getElementById('settingsModal').style.display = 'flex';
+        document.getElementById('geminiApiKey').focus();
     }
     
     closeSettings() {
-        document.getElementById('settingsPanel').classList.remove('open');
-        document.getElementById('settingsOverlay').classList.remove('active');
+        document.getElementById('settingsModal').style.display = 'none';
     }
     
-    toggleApiKeyVisibility() {
-        const apiKeyInput = document.getElementById('apiKey');
-        const toggleBtn = document.getElementById('toggleApiKey');
-        const icon = toggleBtn.querySelector('i');
-        
-        if (apiKeyInput.type === 'password') {
-            apiKeyInput.type = 'text';
-            icon.className = 'fas fa-eye-slash';
-        } else {
-            apiKeyInput.type = 'password';
-            icon.className = 'fas fa-eye';
+    showWelcomeMessage() {
+        if (!this.apiKey) {
+            this.showToast('Chào mừng! Vui lòng cài đặt Gemini API Key để bắt đầu tạo truyện.', 'info');
         }
     }
     
@@ -190,63 +150,46 @@ class AIStoryWriter {
         return icons[type] || icons.info;
     }
     
-    showLoading(show = true) {
-        const overlay = document.getElementById('loadingOverlay');
-        if (show) {
-            overlay.classList.add('active');
-        } else {
-            overlay.classList.remove('active');
-        }
-    }
-    
-    setButtonLoading(buttonId, loading = true) {
-        const button = document.getElementById(buttonId);
-        const spinner = button.querySelector('.loading-spinner');
-        const text = button.querySelector('span');
-        
-        if (loading) {
-            button.disabled = true;
-            spinner.classList.add('active');
-            if (text) text.style.opacity = '0.7';
-        } else {
-            button.disabled = false;
-            spinner.classList.remove('active');
-            if (text) text.style.opacity = '1';
-        }
-    }
-    
     // Gemini API Integration
-    buildInitialPrompt(genre, userPrompt, length) {
-        const systemPrompt = `Bạn là chuyên gia viết tiểu thuyết mạng số 1 Việt Nam, đặc biệt là truyện ngôn tình. Bạn là một 'SIÊU TÁC GIẢ,' một 'NGHỆ NHÂN NGÔN NGỮ' với 30 năm kinh nghiệm. Sứ mệnh của bạn là sáng tác các tiểu thuyết ngôn tình để làm say đắm các bạn trẻ tuổi mộng mơ. Bạn am hiểu sâu sắc văn hóa, thói quen của giới trẻ, những ảo mộng thanh xuân, với vốn từ vựng tiếng Việt phong phú, bạn có khả năng 'SÁNG TÁC' ở trình độ thượng thừa. Mục tiêu tối thượng của bạn là tạo ra những tác phẩm lay động lòng người. Bạn là 'Sáng tác'.
+    buildPrompt(genre, userPrompt, length, characterName = '') {
+        const systemPrompt = `Bạn là chuyên gia viết tiểu thuyết mạng số 1 Việt Nam với 30 năm kinh nghiệm. Bạn là một 'SIÊU TÁC GIẢ,' một 'NGHỆ NHÂN NGÔN NGỮ' với khả năng sáng tác ở trình độ thượng thừa. Sứ mệnh của bạn là tạo ra những câu chuyện lay động lòng người.
+        
+[NHIỆM VỤ DUY NHẤT]: Sáng tác truyện chất lượng cao thuộc các thể loại: ngôn tình, sắc hiệp, tiên hiệp, kinh dị, hành động.
 
-[NHIỆM VỤ DUY NHẤT VÀ TỐI QUAN TRỌNG CỦA BẠN]: Sáng tác tiểu thuyết các thể loại: sắc hiệp, tiên hiệp, ngôn tình.
-
-[ĐẢM BẢO KẾT QUẢ CUỐI CÙNG PHẢI HOÀN TOÀN BẰNG TIẾNG VIỆT, KHÔNG CHẤP NHẬN BẤT KỲ TỪ NGỮ, KÝ TỰ, HAY CẤU TRÚC CÂU NÀO KHÔNG PHẢI TIẾNG VIỆT. Chất lượng sáng tác phải CAO NHẤT, TỰ NHIÊN NHẤT, và 'GÂY NGHIỆN' NHẤT cho độc giả Việt Nam.]`;
+[ĐẢM BẢO KẾT QUẢ CUỐI CÙNG PHẢI HOÀN TOÀN BẰNG TIẾNG VIỆT, chất lượng sáng tác phải CAO NHẤT, TỰ NHIÊN NHẤT.]`;
         
         const genreDescriptions = {
             'ngon-tinh': 'ngôn tình lãng mạn, tình cảm sâu sắc, câu chuyện tình yêu đẹp',
-            'sac-hiep': 'sắc hiệp võ thuật, giang hồ nghĩa khí, võ công cao cường',
-            'tien-hiep': 'tiên hiệp huyền ảo, tu luyện thành tiên, pháp thuật huyền bí'
+            'sac-hiep': 'sắc hiệp võ thuật, tâm lý người lớn, tình cảm nồng cháy',
+            'tien-hiep': 'tiên hiệp huyền ảo, tu luyện thành tiên, pháp thuật huyền bí',
+            'kinh-di': 'kinh dị supernatural, bầu không khí ma quái, yếu tố siêu nhiên',
+            'hanh-dong': 'hành động thriller, phiêu lưu mạo hiểm, nhịp độ nhanh'
         };
         
         const lengthInstructions = {
             'short': 'Viết 2-3 đoạn văn ngắn (200-400 từ)',
-            'medium': 'Viết 3-5 đoạn văn trung bình (400-800 từ)', 
-            'long': 'Viết 5-8 đoạn văn dài (800-1500 từ)'
+            'medium': 'Viết 4-6 đoạn văn trung bình (500-800 từ)', 
+            'long': 'Viết 7-10 đoạn văn dài (900-1500 từ)'
         };
+        
+        let characterInstruction = '';
+        if (characterName) {
+            characterInstruction = `\nTên nhân vật chính: ${characterName}`;
+        }
         
         return `${systemPrompt}
 
-${lengthInstructions[length]}. 
+${lengthInstructions[length]}.
 
 QUAN TRỌNG - FORMATTING RULES:
 - Viết các câu hoàn chỉnh với dấu câu rõ ràng
 - Mỗi đoạn văn 2-4 câu
-- Sử dụng ngôn ngữ Tiếng Việt tự nhiên
+- Sử dụng ngôn ngữ Tiếng Việt tự nhiên, sinh động
 - Tạo không gian trống giữa các đoạn ý
 - Miêu tả chi tiết cảnh vật, tâm lý nhân vật
+- Xây dựng cốt truyện hấp dẫn, logic
 
-Thể loại: ${genreDescriptions[genre]}
+Thể loại: ${genreDescriptions[genre]}${characterInstruction}
 
 Viết truyện dựa trên ý tưởng: "${userPrompt}"
 
@@ -257,18 +200,23 @@ CONTENT: [Nội dung truyện]
 Hãy bắt đầu câu chuyện một cách hấp dẫn và tạo ra nội dung chất lượng cao.`;
     }
     
-    buildContinuePrompt(currentContent) {
+    buildContinuePrompt(currentContent, characterName = '') {
+        let characterInstruction = '';
+        if (characterName) {
+            characterInstruction = `\nNhân vật chính: ${characterName}`;
+        }
+        
         return `Tiếp tục câu chuyện này một cách tự nhiên và hấp dẫn.
 
 FORMATTING RULES:
-- Viết 2-4 đoạn văn tiếp theo
+- Viết 3-5 đoạn văn tiếp theo
 - Mỗi đoạn 2-4 câu hoàn chỉnh  
 - Phát triển cốt truyện một cách logic
 - Giữ tính nhất quán với nội dung trước
-- Sử dụng hoàn toàn tiếng Việt tự nhiên
+- Sử dụng hoàn toàn tiếng Việt tự nhiên${characterInstruction}
 
 Nội dung hiện tại:
-"${currentContent.slice(-500)}..."
+"${currentContent.slice(-800)}..."
 
 Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
     }
@@ -383,12 +331,11 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
     }
     
     generateTitleFromContent(content) {
-        const words = content.split(' ').slice(0, 8);
-        return words.join(' ') + (content.split(' ').length > 8 ? '...' : '');
+        const words = content.split(' ').slice(0, 6);
+        return words.join(' ') + (content.split(' ').length > 6 ? '...' : '');
     }
     
-    // Advanced text formatting with Vietnamese support
-    formatVietnameseStory(text) {
+    formatStoryText(text) {
         if (!text) return [];
         
         // Clean up text
@@ -438,47 +385,6 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         return formattedParagraphs.filter(p => p.length > 10);
     }
     
-    // Format story text into readable paragraphs  
-    formatStoryText(text) {
-        if (!text) return '';
-        
-        // Remove excessive whitespace
-        text = text.trim().replace(/\s+/g, ' ');
-        
-        // Split by sentence endings and create paragraphs
-        const sentences = text.split(/([.!?]+\s*)/);
-        let formattedText = '';
-        let currentParagraph = '';
-        let sentenceCount = 0;
-        
-        for (let i = 0; i < sentences.length; i++) {
-            const part = sentences[i];
-            
-            if (part.match(/[.!?]+\s*/)) {
-                // This is punctuation + space
-                currentParagraph += part;
-                sentenceCount++;
-                
-                // Create new paragraph every 2-3 sentences
-                if (sentenceCount >= 2 && Math.random() > 0.3) {
-                    formattedText += currentParagraph.trim() + '\n\n';
-                    currentParagraph = '';
-                    sentenceCount = 0;
-                }
-            } else if (part.trim()) {
-                // This is sentence content
-                currentParagraph += part;
-            }
-        }
-        
-        // Add remaining content
-        if (currentParagraph.trim()) {
-            formattedText += currentParagraph.trim();
-        }
-        
-        return formattedText.trim();
-    }
-    
     // Story Management
     async handleStorySubmit(e) {
         e.preventDefault();
@@ -486,8 +392,9 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         if (this.isGenerating) return;
         
         const genre = document.getElementById('storyGenre').value;
-        const length = document.getElementById('storyLength').value;
+        const length = document.querySelector('input[name="storyLength"]:checked').value;
         const userPrompt = document.getElementById('storyPrompt').value.trim();
+        const characterName = document.getElementById('mainCharacter').value.trim();
         
         if (!genre || !userPrompt) {
             this.showToast('Vui lòng chọn thể loại và nhập ý tưởng truyện', 'warning');
@@ -502,15 +409,14 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         
         try {
             this.isGenerating = true;
-            this.showLoading(true);
-            this.setButtonLoading('generateBtn', true);
+            this.setButtonLoading('storyForm', true);
             
-            const prompt = this.buildInitialPrompt(genre, userPrompt, length);
+            const prompt = this.buildPrompt(genre, userPrompt, length, characterName);
             const response = await this.generateStory(prompt);
             const parsed = this.parseStoryResponse(response);
             
-            // FORMAT TEXT INTO PARAGRAPHS
-            const formattedParagraphs = this.formatVietnameseStory(parsed.content);
+            // Format text into paragraphs
+            const formattedParagraphs = this.formatStoryText(parsed.content);
             
             this.currentStory = {
                 id: Date.now().toString(),
@@ -518,13 +424,12 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
                 content: formattedParagraphs,
                 genre: genre,
                 length: length,
+                characterName: characterName,
                 originalPrompt: userPrompt,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                createdAt: new Date().toISOString()
             };
             
             this.displayStory();
-            this.saveStory(this.currentStory);
             this.showToast('Truyện đã được tạo thành công!', 'success');
             
         } catch (error) {
@@ -532,8 +437,7 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
             this.showToast(`Lỗi: ${error.message}`, 'error');
         } finally {
             this.isGenerating = false;
-            this.showLoading(false);
-            this.setButtonLoading('generateBtn', false);
+            this.setButtonLoading('storyForm', false);
         }
     }
     
@@ -548,21 +452,19 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         
         try {
             this.isGenerating = true;
-            this.setButtonLoading('continueBtn', true);
+            this.setButtonLoading('continueStoryBtn', true);
             
             const currentContent = this.currentStory.content.join('\n\n');
-            const prompt = this.buildContinuePrompt(currentContent);
+            const prompt = this.buildContinuePrompt(currentContent, this.currentStory.characterName);
             const response = await this.generateStory(prompt);
             
-            // FORMAT CONTINUATION TEXT
-            const formattedParagraphs = this.formatVietnameseStory(response.trim());
+            // Format continuation text
+            const formattedParagraphs = this.formatStoryText(response.trim());
             
             // Add formatted paragraphs to existing content
             this.currentStory.content.push(...formattedParagraphs);
-            this.currentStory.updatedAt = new Date().toISOString();
             
             this.displayStory();
-            this.saveStory(this.currentStory);
             this.showToast('Đã tiếp tục câu chuyện!', 'success');
             
         } catch (error) {
@@ -570,31 +472,27 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
             this.showToast(`Lỗi: ${error.message}`, 'error');
         } finally {
             this.isGenerating = false;
-            this.setButtonLoading('continueBtn', false);
+            this.setButtonLoading('continueStoryBtn', false);
         }
     }
     
     displayStory() {
         if (!this.currentStory) return;
         
-        const section = document.getElementById('storyDisplaySection');
-        const title = document.getElementById('storyTitle');
+        const section = document.getElementById('storySection');
         const content = document.getElementById('storyContent');
         
-        title.textContent = this.currentStory.title;
         content.innerHTML = '';
         
         // Display each paragraph with animation delay
         this.currentStory.content.forEach((paragraph, index) => {
-            const div = document.createElement('div');
-            div.className = 'story-paragraph';
-            div.textContent = paragraph;
-            
-            // Add delay for animation
             setTimeout(() => {
+                const div = document.createElement('div');
+                div.className = 'story-paragraph';
+                div.textContent = paragraph;
                 content.appendChild(div);
                 
-                // Scroll to new content if this is the last paragraph and there are multiple
+                // Scroll to new content if this is the last paragraph
                 if (index === this.currentStory.content.length - 1 && this.currentStory.content.length > 1) {
                     div.scrollIntoView({ 
                         behavior: 'smooth', 
@@ -604,32 +502,48 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
             }, index * 100);
         });
         
-        section.classList.add('visible');
+        section.style.display = 'block';
     }
     
     newStory() {
         this.currentStory = null;
-        document.getElementById('storyDisplaySection').classList.remove('visible');
+        document.getElementById('storySection').style.display = 'none';
         document.getElementById('storyForm').reset();
         document.getElementById('storyPrompt').focus();
         
         // Reset to default selections
-        document.getElementById('storyLength').value = 'medium';
+        document.querySelector('input[name="storyLength"][value="short"]').checked = true;
     }
     
-    saveCurrentStory() {
+    copyStory() {
         if (!this.currentStory) {
-            this.showToast('Không có truyện nào để lưu', 'warning');
+            this.showToast('Không có truyện nào để sao chép', 'warning');
             return;
         }
         
-        this.saveStory(this.currentStory);
-        this.showToast('Truyện đã được lưu vào lịch sử!', 'success');
+        try {
+            const content = `${this.currentStory.title}\n\n${this.currentStory.content.join('\n\n')}`;
+            navigator.clipboard.writeText(content).then(() => {
+                this.showToast('Đã sao chép truyện vào clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = content;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                this.showToast('Đã sao chép truyện!', 'success');
+            });
+        } catch (error) {
+            console.error('Error copying story:', error);
+            this.showToast('Lỗi khi sao chép truyện', 'error');
+        }
     }
     
-    exportStory() {
+    downloadStory() {
         if (!this.currentStory) {
-            this.showToast('Không có truyện nào để xuất', 'warning');
+            this.showToast('Không có truyện nào để tải xuống', 'warning');
             return;
         }
         
@@ -646,140 +560,41 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            this.showToast('Truyện đã được xuất thành công!', 'success');
+            this.showToast('Truyện đã được tải xuống thành công!', 'success');
         } catch (error) {
-            console.error('Error exporting story:', error);
-            this.showToast('Lỗi khi xuất truyện', 'error');
+            console.error('Error downloading story:', error);
+            this.showToast('Lỗi khi tải xuống truyện', 'error');
         }
     }
     
-    // History Management
-    renderHistory() {
-        const historyList = document.getElementById('historyList');
+    setButtonLoading(elementId, loading = true) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
         
-        if (this.stories.length === 0) {
-            historyList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-book-open"></i>
-                    <p>Chưa có truyện nào. Hãy tạo truyện đầu tiên của bạn!</p>
-                </div>
-            `;
-            return;
-        }
-        
-        historyList.innerHTML = '';
-        
-        this.stories.forEach(story => {
-            const item = document.createElement('div');
-            item.className = 'history-item';
+        if (elementId === 'storyForm') {
+            const submitBtn = element.querySelector('button[type="submit"]');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
             
-            const preview = story.content[0].substring(0, 100) + '...';
-            const createdDate = new Date(story.createdAt).toLocaleDateString('vi-VN');
-            const genreLabels = {
-                'ngon-tinh': 'Ngôn tình',
-                'sac-hiep': 'Sắc hiệp',
-                'tien-hiep': 'Tiên hiệp'
-            };
-            
-            item.innerHTML = `
-                <div class="history-item-content">
-                    <div class="history-item-title">${story.title}</div>
-                    <div class="history-item-preview">${preview}</div>
-                    <div class="history-item-meta">
-                        <span><i class="fas fa-calendar"></i> ${createdDate}</span>
-                        <span><i class="fas fa-tag"></i> ${genreLabels[story.genre]}</span>
-                        <span><i class="fas fa-file-alt"></i> ${story.content.length} đoạn</span>
-                    </div>
-                </div>
-                <div class="history-item-actions">
-                    <button class="history-action-btn" title="Xem truyện" onclick="app.loadStory('${story.id}')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="history-action-btn" title="Xuất file" onclick="app.exportStoryById('${story.id}')">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="history-action-btn" title="Xóa truyện" onclick="app.deleteStory('${story.id}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `;
-            
-            historyList.appendChild(item);
-        });
-    }
-    
-    loadStory(storyId) {
-        const story = this.stories.find(s => s.id === storyId);
-        if (!story) {
-            this.showToast('Không tìm thấy truyện', 'error');
-            return;
+            if (loading) {
+                submitBtn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'flex';
+            } else {
+                submitBtn.disabled = false;
+                btnText.style.display = 'flex';
+                btnLoading.style.display = 'none';
+            }
+        } else {
+            const spinner = element.querySelector('.loading-spinner');
+            if (loading) {
+                element.disabled = true;
+                if (spinner) spinner.style.display = 'block';
+            } else {
+                element.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+            }
         }
-        
-        this.currentStory = { ...story };
-        this.displayStory();
-        
-        // Scroll to story display
-        document.getElementById('storyDisplaySection').scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-        });
-    }
-    
-    exportStoryById(storyId) {
-        const story = this.stories.find(s => s.id === storyId);
-        if (!story) {
-            this.showToast('Không tìm thấy truyện', 'error');
-            return;
-        }
-        
-        try {
-            const content = `${story.title}\n\n${story.content.join('\n\n')}`;
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${story.title}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showToast('Truyện đã được xuất thành công!', 'success');
-        } catch (error) {
-            console.error('Error exporting story:', error);
-            this.showToast('Lỗi khi xuất truyện', 'error');
-        }
-    }
-    
-    deleteStory(storyId) {
-        if (!confirm('Bạn có chắc chắn muốn xóa truyện này?')) {
-            return;
-        }
-        
-        this.stories = this.stories.filter(s => s.id !== storyId);
-        localStorage.setItem('ai-story-writer-stories', JSON.stringify(this.stories));
-        this.renderHistory();
-        
-        // If deleted story is currently displayed, hide it
-        if (this.currentStory && this.currentStory.id === storyId) {
-            this.newStory();
-        }
-        
-        this.showToast('Truyện đã được xóa', 'success');
-    }
-    
-    clearHistory() {
-        if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử truyện?')) {
-            return;
-        }
-        
-        this.stories = [];
-        localStorage.removeItem('ai-story-writer-stories');
-        this.renderHistory();
-        this.newStory();
-        
-        this.showToast('Đã xóa toàn bộ lịch sử truyện', 'success');
     }
 }
 
@@ -787,214 +602,4 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
 let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new AIStoryWriter();
-    
-    // Initialize new authentication and age verification systems
-    window.authManager = new AuthManager();
-    window.ageVerification = new AgeVerification();
 });
-
-// User Authentication System
-class AuthManager {
-    constructor() {
-        this.currentUser = null;
-        this.initializeAuthUI();
-        this.checkStoredAuth();
-    }
-
-    initializeAuthUI() {
-        // Authentication event listeners
-        document.getElementById('loginBtn')?.addEventListener('click', () => this.showLoginModal());
-        document.getElementById('registerBtn')?.addEventListener('click', () => this.showRegisterModal());
-        document.getElementById('logoutBtn')?.addEventListener('click', () => this.logout());
-        
-        // Modal controls
-        document.getElementById('closeLoginModal')?.addEventListener('click', () => this.hideAuthModals());
-        document.getElementById('closeRegisterModal')?.addEventListener('click', () => this.hideAuthModals());
-        document.getElementById('switchToRegister')?.addEventListener('click', () => this.switchToRegister());
-        document.getElementById('switchToLogin')?.addEventListener('click', () => this.switchToLogin());
-        
-        // Form submissions
-        document.getElementById('loginForm')?.addEventListener('submit', (e) => this.handleLogin(e));
-        document.getElementById('registerForm')?.addEventListener('submit', (e) => this.handleRegister(e));
-        
-        // Close modal on overlay click
-        document.getElementById('authModalOverlay')?.addEventListener('click', (e) => {
-            if (e.target.id === 'authModalOverlay') {
-                this.hideAuthModals();
-            }
-        });
-    }
-
-    checkStoredAuth() {
-        const storedUser = localStorage.getItem('currentUser');
-        if (storedUser) {
-            this.currentUser = JSON.parse(storedUser);
-            this.updateAuthUI();
-        }
-    }
-
-    showLoginModal() {
-        document.getElementById('authModalOverlay').classList.remove('hidden');
-        document.getElementById('loginModal').classList.remove('hidden');
-        document.getElementById('registerModal').classList.add('hidden');
-    }
-
-    showRegisterModal() {
-        document.getElementById('authModalOverlay').classList.remove('hidden');
-        document.getElementById('registerModal').classList.remove('hidden');
-        document.getElementById('loginModal').classList.add('hidden');
-    }
-
-    hideAuthModals() {
-        document.getElementById('authModalOverlay').classList.add('hidden');
-        // Reset forms
-        document.getElementById('loginForm')?.reset();
-        document.getElementById('registerForm')?.reset();
-    }
-
-    switchToRegister() {
-        document.getElementById('loginModal').classList.add('hidden');
-        document.getElementById('registerModal').classList.remove('hidden');
-    }
-
-    switchToLogin() {
-        document.getElementById('registerModal').classList.add('hidden');
-        document.getElementById('loginModal').classList.remove('hidden');
-    }
-
-    async handleLogin(e) {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        
-        // Mock authentication - replace with real backend
-        if (email && password) {
-            this.currentUser = {
-                id: Date.now(),
-                name: email.split('@')[0],
-                email: email,
-                loginTime: new Date().toISOString()
-            };
-            
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-            this.updateAuthUI();
-            this.hideAuthModals();
-            this.showToast('Đăng nhập thành công!', 'success');
-        }
-    }
-
-    async handleRegister(e) {
-        e.preventDefault();
-        const name = document.getElementById('registerName').value;
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        
-        if (password !== confirmPassword) {
-            this.showToast('Mật khẩu xác nhận không khớp!', 'error');
-            return;
-        }
-        
-        // Mock registration - replace with real backend
-        this.currentUser = {
-            id: Date.now(),
-            name: name,
-            email: email,
-            registerTime: new Date().toISOString()
-        };
-        
-        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-        this.updateAuthUI();
-        this.hideAuthModals();
-        this.showToast('Đăng ký thành công!', 'success');
-    }
-
-    logout() {
-        this.currentUser = null;
-        localStorage.removeItem('currentUser');
-        this.updateAuthUI();
-        this.showToast('Đã đăng xuất!', 'info');
-    }
-
-    updateAuthUI() {
-        const authButtons = document.getElementById('authButtons');
-        const userProfile = document.getElementById('userProfile');
-        const userName = document.getElementById('userName');
-        
-        if (this.currentUser) {
-            authButtons.classList.add('hidden');
-            userProfile.classList.remove('hidden');
-            userName.textContent = this.currentUser.name;
-        } else {
-            authButtons.classList.remove('hidden');
-            userProfile.classList.add('hidden');
-        }
-    }
-
-    showToast(message, type = 'info') {
-        // Use existing toast system
-        if (window.app && window.app.showToast) {
-            window.app.showToast(message, type);
-        }
-    }
-}
-
-// Age Verification for Sắc hiệp
-class AgeVerification {
-    constructor() {
-        this.isVerified = localStorage.getItem('ageVerified') === 'true';
-        this.initializeAgeVerification();
-    }
-
-    initializeAgeVerification() {
-        // Listen for genre selection
-        document.getElementById('storyGenre')?.addEventListener('change', (e) => {
-            if (e.target.value === 'sac-hiep' && !this.isVerified) {
-                this.showAgeVerificationModal();
-            }
-        });
-
-        // Age verification modal controls
-        document.getElementById('ageConfirmCheckbox')?.addEventListener('change', (e) => {
-            document.getElementById('confirmAgeBtn').disabled = !e.target.checked;
-        });
-
-        document.getElementById('confirmAgeBtn')?.addEventListener('click', () => this.confirmAge());
-        document.getElementById('cancelAgeBtn')?.addEventListener('click', () => this.cancelAge());
-        
-        // Close modal on overlay click
-        document.getElementById('ageVerificationOverlay')?.addEventListener('click', (e) => {
-            if (e.target.id === 'ageVerificationOverlay') {
-                this.cancelAge();
-            }
-        });
-    }
-
-    showAgeVerificationModal() {
-        document.getElementById('ageVerificationOverlay').classList.remove('hidden');
-    }
-
-    hideAgeVerificationModal() {
-        document.getElementById('ageVerificationOverlay').classList.add('hidden');
-        // Reset form
-        document.getElementById('ageConfirmCheckbox').checked = false;
-        document.getElementById('confirmAgeBtn').disabled = true;
-    }
-
-    confirmAge() {
-        this.isVerified = true;
-        localStorage.setItem('ageVerified', 'true');
-        this.hideAgeVerificationModal();
-        if (window.app && window.app.showToast) {
-            window.app.showToast('Đã xác nhận độ tuổi. Bạn có thể tạo nội dung sắc hiệp.', 'success');
-        }
-    }
-
-    cancelAge() {
-        document.getElementById('storyGenre').value = '';
-        this.hideAgeVerificationModal();
-        if (window.app && window.app.showToast) {
-            window.app.showToast('Đã hủy chọn thể loại sắc hiệp.', 'info');
-        }
-    }
-}
