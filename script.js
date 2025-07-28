@@ -1,3 +1,354 @@
+// Interactive Story Manager Class
+class InteractiveStoryManager {
+    constructor() {
+        this.currentStory = null;
+        this.storySegments = [];
+        this.choices = [];
+        this.selectedChoices = [];
+        this.currentSegmentIndex = 0;
+        this.maxChoices = 10;
+        this.isInteractiveMode = false;
+    }
+    
+    // Initialize interactive mode
+    enableInteractiveMode() {
+        this.isInteractiveMode = true;
+        this.setupChoiceEventListeners();
+    }
+    
+    // Disable interactive mode (fallback to legacy)
+    disableInteractiveMode() {
+        this.isInteractiveMode = false;
+        this.hideChoices();
+        this.showLegacyControls();
+    }
+    
+    // Setup event listeners for choice buttons
+    setupChoiceEventListeners() {
+        const choiceButtons = document.querySelectorAll('.choice-button');
+        choiceButtons.forEach(button => {
+            button.addEventListener('click', (e) => this.handleChoiceSelection(e));
+        });
+    }
+    
+    // Handle choice selection
+    handleChoiceSelection(event) {
+        const button = event.currentTarget;
+        const choice = button.dataset.choice;
+        const choiceText = button.querySelector('.choice-text').textContent;
+        
+        if (button.classList.contains('selected') || button.classList.contains('disabled')) {
+            return;
+        }
+        
+        // Mark this choice as selected
+        button.classList.add('selected');
+        
+        // Disable all other choices
+        const allButtons = document.querySelectorAll('.choice-button');
+        allButtons.forEach(btn => {
+            if (btn !== button) {
+                btn.classList.add('disabled');
+            }
+        });
+        
+        // Store the selected choice
+        this.selectedChoices.push({
+            segment: this.currentSegmentIndex,
+            choice: choice,
+            text: choiceText
+        });
+        
+        // Continue story based on choice
+        this.continueStoryWithChoice(choice, choiceText);
+    }
+    
+    // Continue story based on selected choice
+    async continueStoryWithChoice(selectedChoice, choiceText) {
+        if (!window.app || !window.app.apiKey) {
+            window.app.showToast('Vui lòng cài đặt Gemini API Key trước', 'warning');
+            return;
+        }
+        
+        try {
+            window.app.isGenerating = true;
+            this.hideChoices();
+            this.showLoadingState();
+            
+            const previousContext = this.storySegments.join(' ');
+            const continuePrompt = this.buildContinueChoicePrompt(previousContext, selectedChoice, choiceText);
+            
+            const response = await window.app.generateStory(continuePrompt);
+            const parsed = this.parseChoiceResponse(response);
+            
+            // Add new segment
+            this.storySegments.push(parsed.story);
+            this.currentSegmentIndex++;
+            
+            // Update story display
+            this.updateStoryDisplay();
+            this.updateProgress();
+            
+            // Show new choices or end story
+            if (this.selectedChoices.length < this.maxChoices && parsed.choices && parsed.choices.length === 4) {
+                this.choices.push(parsed.choices);
+                this.displayChoices(parsed.choices);
+            } else {
+                this.endInteractiveStory();
+            }
+            
+            window.app.showToast('Câu chuyện đã tiếp tục dựa trên lựa chọn của bạn!', 'success');
+            
+        } catch (error) {
+            console.error('Error continuing story with choice:', error);
+            window.app.showToast(`Lỗi: ${error.message}`, 'error');
+        } finally {
+            window.app.isGenerating = false;
+            this.hideLoadingState();
+        }
+    }
+    
+    // Build prompt for continuing story with choice
+    buildContinueChoicePrompt(previousContext, selectedChoice, choiceText) {
+        return `Tiếp tục câu chuyện dựa trên lựa chọn của người đọc:
+
+Nội dung trước: "${previousContext.slice(-800)}..."
+
+Lựa chọn được chọn: "${selectedChoice}) ${choiceText}"
+
+YÊU CẦU:
+- Viết tiếp 200-400 từ dựa trên lựa chọn này
+- Phát triển cốt truyện một cách logic và hợp lý
+- Kết thúc bằng tình huống mới cần quyết định
+- Đề xuất 4 lựa chọn mới cho nhân vật (A, B, C, D)
+- Sử dụng hoàn toàn tiếng Việt tự nhiên
+- Format liên tục, không chia đoạn văn
+
+Định dạng trả về:
+STORY: [nội dung tiếp theo]
+CHOICES:
+A) [Lựa chọn A]
+B) [Lựa chọn B] 
+C) [Lựa chọn C]
+D) [Lựa chọn D]`;
+    }
+    
+    // Parse response containing story and choices
+    parseChoiceResponse(response) {
+        try {
+            const lines = response.trim().split('\n');
+            let story = '';
+            let choices = [];
+            let currentSection = '';
+            
+            for (const line of lines) {
+                if (line.startsWith('STORY:')) {
+                    story = line.replace('STORY:', '').trim();
+                    currentSection = 'story';
+                } else if (line.startsWith('CHOICES:')) {
+                    currentSection = 'choices';
+                } else if (line.match(/^[A-D]\)/)) {
+                    choices.push(line.trim());
+                } else if (currentSection === 'story' && line.trim()) {
+                    story += ' ' + line.trim();
+                }
+            }
+            
+            // If no structured format found, try to extract from plain text
+            if (!story && !choices.length) {
+                const parts = response.split(/CHOICES:|Lựa chọn:|A\)|B\)|C\)|D\)/);
+                story = parts[0]?.trim() || response.trim();
+                
+                // Try to extract choices if they exist
+                const choiceMatches = response.match(/[A-D]\)[^A-D\)]+/g);
+                if (choiceMatches) {
+                    choices = choiceMatches.slice(0, 4);
+                }
+            }
+            
+            return {
+                story: story || response.trim(),
+                choices: choices.length === 4 ? choices : []
+            };
+        } catch (error) {
+            console.error('Error parsing choice response:', error);
+            return {
+                story: response.trim(),
+                choices: []
+            };
+        }
+    }
+    
+    // Display choice buttons
+    displayChoices(choices) {
+        if (!choices || choices.length !== 4) return;
+        
+        const choicesContainer = document.getElementById('storyChoices');
+        const buttons = choicesContainer.querySelectorAll('.choice-button');
+        
+        choices.forEach((choice, index) => {
+            const button = buttons[index];
+            const choiceText = button.querySelector('.choice-text');
+            const cleanChoice = choice.replace(/^[A-D]\)\s*/, '');
+            choiceText.textContent = cleanChoice;
+            
+            // Reset button states
+            button.classList.remove('selected', 'disabled');
+        });
+        
+        choicesContainer.style.display = 'grid';
+        this.hideLegacyControls();
+    }
+    
+    // Hide choice buttons
+    hideChoices() {
+        document.getElementById('storyChoices').style.display = 'none';
+    }
+    
+    // Show legacy controls
+    showLegacyControls() {
+        document.getElementById('legacyControls').style.display = 'flex';
+    }
+    
+    // Hide legacy controls
+    hideLegacyControls() {
+        document.getElementById('legacyControls').style.display = 'none';
+    }
+    
+    // Update story display with continuous format
+    updateStoryDisplay() {
+        const content = document.getElementById('storyContent');
+        const fullStory = this.storySegments.join(' ');
+        content.textContent = fullStory;
+        
+        // Scroll to bottom to show new content
+        content.scrollTop = content.scrollHeight;
+    }
+    
+    // Update progress bar and counter
+    updateProgress() {
+        const progressFill = document.getElementById('storyProgress');
+        const choiceCount = document.getElementById('choiceCount');
+        const segmentNumber = document.getElementById('segmentNumber');
+        
+        const progress = (this.selectedChoices.length / this.maxChoices) * 100;
+        progressFill.style.width = `${progress}%`;
+        choiceCount.textContent = this.selectedChoices.length;
+        segmentNumber.textContent = this.currentSegmentIndex + 1;
+    }
+    
+    // End interactive story
+    endInteractiveStory() {
+        this.hideChoices();
+        this.showLegacyControls();
+        
+        // Update final story object for saving
+        if (window.app && window.app.currentStory) {
+            window.app.currentStory.content = [this.storySegments.join(' ')];
+            window.app.currentStory.choices = this.selectedChoices;
+            window.app.currentStory.isInteractive = true;
+            window.app.currentStory.updatedAt = new Date().toISOString();
+            window.app.saveStory(window.app.currentStory);
+        }
+        
+        window.app.showToast('Câu chuyện tương tác đã hoàn thành!', 'success');
+    }
+    
+    // Initialize first story with choices
+    async initializeInteractiveStory(genre, prompt, length) {
+        try {
+            const initialPrompt = this.buildInitialInteractivePrompt(genre, prompt, length);
+            const response = await window.app.generateStory(initialPrompt);
+            const parsed = this.parseChoiceResponse(response);
+            
+            // Initialize story state
+            this.storySegments = [parsed.story];
+            this.currentSegmentIndex = 0;
+            this.selectedChoices = [];
+            
+            if (parsed.choices && parsed.choices.length === 4) {
+                this.choices = [parsed.choices];
+                this.updateStoryDisplay();
+                this.displayChoices(parsed.choices);
+                this.updateProgress();
+                this.enableInteractiveMode();
+                return true;
+            } else {
+                // Fallback to legacy mode if no choices generated
+                this.disableInteractiveMode();
+                return false;
+            }
+        } catch (error) {
+            console.error('Error initializing interactive story:', error);
+            this.disableInteractiveMode();
+            throw error;
+        }
+    }
+    
+    // Build initial prompt for interactive story
+    buildInitialInteractivePrompt(genre, userPrompt, length) {
+        const systemPrompt = `Bạn là chuyên gia viết tiểu thuyết tương tác số 1 Việt Nam. Nhiệm vụ của bạn là tạo câu chuyện có lựa chọn để người đọc tham gia quyết định.`;
+        
+        const genreDescriptions = {
+            'ngon-tinh': 'ngôn tình lãng mạn, tình cảm sâu sắc',
+            'sac-hiep': 'sắc hiệp võ thuật, giang hồ nghĩa khí', 
+            'tien-hiep': 'tiên hiệp huyền ảo, tu luyện thành tiên'
+        };
+        
+        const lengthInstructions = {
+            'short': '200-400 từ',
+            'medium': '400-600 từ',
+            'long': '600-800 từ'
+        };
+        
+        return `${systemPrompt}
+
+Tạo phần đầu của câu chuyện ${genreDescriptions[genre]} dựa trên: "${userPrompt}"
+
+YÊU CẦU:
+- Độ dài: ${lengthInstructions[length]}
+- Format: Văn bản liên tục, không chia đoạn
+- Kết thúc bằng tình huống cần quyết định
+- Đề xuất 4 lựa chọn hành động rõ ràng (A, B, C, D)
+- Sử dụng hoàn toàn tiếng Việt tự nhiên
+
+Định dạng trả về:
+STORY: [nội dung câu chuyện]
+CHOICES:
+A) [Lựa chọn A - mô tả ngắn gọn]
+B) [Lựa chọn B - mô tả ngắn gọn]
+C) [Lựa chọn C - mô tả ngắn gọn] 
+D) [Lựa chọn D - mô tả ngắn gọn]`;
+    }
+    
+    // Show loading state
+    showLoadingState() {
+        const choicesContainer = document.getElementById('storyChoices');
+        choicesContainer.style.opacity = '0.5';
+        choicesContainer.style.pointerEvents = 'none';
+    }
+    
+    // Hide loading state
+    hideLoadingState() {
+        const choicesContainer = document.getElementById('storyChoices');
+        choicesContainer.style.opacity = '1';
+        choicesContainer.style.pointerEvents = 'auto';
+    }
+    
+    // Reset interactive story
+    reset() {
+        this.currentStory = null;
+        this.storySegments = [];
+        this.choices = [];
+        this.selectedChoices = [];
+        this.currentSegmentIndex = 0;
+        this.isInteractiveMode = false;
+        this.hideChoices();
+        this.showLegacyControls();
+        this.updateProgress();
+    }
+}
+
 // AI Story Writer - Main Application Script
 class AIStoryWriter {
     constructor() {
@@ -5,6 +356,9 @@ class AIStoryWriter {
         this.currentStory = null;
         this.stories = [];
         this.isGenerating = false;
+        
+        // Initialize Interactive Story Manager
+        this.interactiveManager = new InteractiveStoryManager();
         
         // Initialize application
         this.init();
@@ -505,31 +859,44 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
             this.showLoading(true);
             this.setButtonLoading('generateBtn', true);
             
-            const prompt = this.buildInitialPrompt(genre, userPrompt, length);
-            const response = await this.generateStory(prompt);
-            const parsed = this.parseStoryResponse(response);
+            // Reset interactive manager
+            this.interactiveManager.reset();
             
-            // FORMAT TEXT INTO PARAGRAPHS
-            const formattedParagraphs = this.formatVietnameseStory(parsed.content);
+            // Try interactive story first
+            const interactiveSuccess = await this.interactiveManager.initializeInteractiveStory(genre, userPrompt, length);
             
-            this.currentStory = {
-                id: Date.now().toString(),
-                title: parsed.title,
-                content: formattedParagraphs,
-                genre: genre,
-                length: length,
-                originalPrompt: userPrompt,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            this.displayStory();
-            this.saveStory(this.currentStory);
-            this.showToast('Truyện đã được tạo thành công!', 'success');
+            if (interactiveSuccess) {
+                // Create story object for interactive mode
+                this.currentStory = {
+                    id: Date.now().toString(),
+                    title: this.generateTitleFromPrompt(userPrompt),
+                    content: this.interactiveManager.storySegments,
+                    genre: genre,
+                    length: length,
+                    originalPrompt: userPrompt,
+                    isInteractive: true,
+                    choices: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                this.displayInteractiveStory();
+                this.showToast('Truyện tương tác đã được tạo! Hãy chọn lựa chọn để tiếp tục.', 'success');
+            } else {
+                // Fallback to legacy mode
+                await this.generateLegacyStory(genre, userPrompt, length);
+            }
             
         } catch (error) {
             console.error('Error generating story:', error);
             this.showToast(`Lỗi: ${error.message}`, 'error');
+            
+            // Fallback to legacy mode on error
+            try {
+                await this.generateLegacyStory(genre, userPrompt, length);
+            } catch (fallbackError) {
+                console.error('Fallback error:', fallbackError);
+            }
         } finally {
             this.isGenerating = false;
             this.showLoading(false);
@@ -537,9 +904,83 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         }
     }
     
+    // Generate legacy story (non-interactive)
+    async generateLegacyStory(genre, userPrompt, length) {
+        const prompt = this.buildInitialPrompt(genre, userPrompt, length);
+        const response = await this.generateStory(prompt);
+        const parsed = this.parseStoryResponse(response);
+        
+        // FORMAT TEXT INTO PARAGRAPHS
+        const formattedParagraphs = this.formatVietnameseStory(parsed.content);
+        
+        this.currentStory = {
+            id: Date.now().toString(),
+            title: parsed.title,
+            content: formattedParagraphs,
+            genre: genre,
+            length: length,
+            originalPrompt: userPrompt,
+            isInteractive: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        this.displayLegacyStory();
+        this.saveStory(this.currentStory);
+        this.showToast('Truyện đã được tạo thành công!', 'success');
+    }
+    
+    // Display interactive story
+    displayInteractiveStory() {
+        if (!this.currentStory) return;
+        
+        const section = document.getElementById('storyDisplaySection');
+        const title = document.getElementById('storyTitle');
+        
+        title.textContent = this.currentStory.title;
+        section.classList.add('visible');
+        
+        // Story content and choices are handled by InteractiveStoryManager
+    }
+    
+    // Display legacy story (with paragraphs)
+    displayLegacyStory() {
+        if (!this.currentStory) return;
+        
+        const section = document.getElementById('storyDisplaySection');
+        const title = document.getElementById('storyTitle');
+        const content = document.getElementById('storyContent');
+        
+        title.textContent = this.currentStory.title;
+        content.innerHTML = '';
+        
+        // For legacy stories, format as continuous text
+        const fullText = this.currentStory.content.join(' ');
+        content.textContent = fullText;
+        
+        // Reset interactive elements
+        this.interactiveManager.hideChoices();
+        this.interactiveManager.showLegacyControls();
+        
+        section.classList.add('visible');
+    }
+    
+    // Generate title from prompt
+    generateTitleFromPrompt(prompt) {
+        const words = prompt.split(' ').slice(0, 6);
+        return words.join(' ') + (prompt.split(' ').length > 6 ? '...' : '');
+    }
+    
     async continueStory() {
         if (!this.currentStory || this.isGenerating) return;
         
+        // If it's an interactive story, let the InteractiveStoryManager handle it
+        if (this.currentStory.isInteractive && this.interactiveManager.isInteractiveMode) {
+            this.showToast('Vui lòng chọn một lựa chọn để tiếp tục câu chuyện', 'info');
+            return;
+        }
+        
+        // Legacy continue story functionality
         if (!this.apiKey) {
             this.showToast('Vui lòng cài đặt Gemini API Key trước', 'warning');
             this.openSettings();
@@ -550,18 +991,27 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
             this.isGenerating = true;
             this.setButtonLoading('continueBtn', true);
             
-            const currentContent = this.currentStory.content.join('\n\n');
+            const currentContent = Array.isArray(this.currentStory.content) 
+                ? this.currentStory.content.join(' ')
+                : this.currentStory.content;
+                
             const prompt = this.buildContinuePrompt(currentContent);
             const response = await this.generateStory(prompt);
             
-            // FORMAT CONTINUATION TEXT
-            const formattedParagraphs = this.formatVietnameseStory(response.trim());
+            // FORMAT CONTINUATION TEXT as continuous
+            const continuationText = response.trim();
             
-            // Add formatted paragraphs to existing content
-            this.currentStory.content.push(...formattedParagraphs);
+            // For legacy stories, append to existing content
+            if (Array.isArray(this.currentStory.content)) {
+                const fullText = this.currentStory.content.join(' ') + ' ' + continuationText;
+                this.currentStory.content = [fullText];
+            } else {
+                this.currentStory.content += ' ' + continuationText;
+            }
+            
             this.currentStory.updatedAt = new Date().toISOString();
             
-            this.displayStory();
+            this.displayLegacyStory();
             this.saveStory(this.currentStory);
             this.showToast('Đã tiếp tục câu chuyện!', 'success');
             
@@ -575,40 +1025,17 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
     }
     
     displayStory() {
-        if (!this.currentStory) return;
-        
-        const section = document.getElementById('storyDisplaySection');
-        const title = document.getElementById('storyTitle');
-        const content = document.getElementById('storyContent');
-        
-        title.textContent = this.currentStory.title;
-        content.innerHTML = '';
-        
-        // Display each paragraph with animation delay
-        this.currentStory.content.forEach((paragraph, index) => {
-            const div = document.createElement('div');
-            div.className = 'story-paragraph';
-            div.textContent = paragraph;
-            
-            // Add delay for animation
-            setTimeout(() => {
-                content.appendChild(div);
-                
-                // Scroll to new content if this is the last paragraph and there are multiple
-                if (index === this.currentStory.content.length - 1 && this.currentStory.content.length > 1) {
-                    div.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'end' 
-                    });
-                }
-            }, index * 100);
-        });
-        
-        section.classList.add('visible');
+        // Determine if this is an interactive or legacy story
+        if (this.currentStory && this.currentStory.isInteractive) {
+            this.displayInteractiveStory();
+        } else {
+            this.displayLegacyStory();
+        }
     }
     
     newStory() {
         this.currentStory = null;
+        this.interactiveManager.reset();
         document.getElementById('storyDisplaySection').classList.remove('visible');
         document.getElementById('storyForm').reset();
         document.getElementById('storyPrompt').focus();
@@ -634,7 +1061,35 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         }
         
         try {
-            const content = `${this.currentStory.title}\n\n${this.currentStory.content.join('\n\n')}`;
+            let content = '';
+            
+            if (this.currentStory.isInteractive) {
+                // Export interactive story with choices
+                content = `${this.currentStory.title}\n\n`;
+                
+                if (this.interactiveManager.storySegments.length > 0) {
+                    content += this.interactiveManager.storySegments.join(' ');
+                } else {
+                    content += Array.isArray(this.currentStory.content) 
+                        ? this.currentStory.content.join(' ')
+                        : this.currentStory.content;
+                }
+                
+                // Add choices history if available
+                if (this.interactiveManager.selectedChoices.length > 0) {
+                    content += '\n\n--- Lịch sử lựa chọn ---\n';
+                    this.interactiveManager.selectedChoices.forEach((choice, index) => {
+                        content += `${index + 1}. ${choice.choice}) ${choice.text}\n`;
+                    });
+                }
+            } else {
+                // Export legacy story
+                const storyText = Array.isArray(this.currentStory.content) 
+                    ? this.currentStory.content.join(' ')
+                    : this.currentStory.content;
+                content = `${this.currentStory.title}\n\n${storyText}`;
+            }
+            
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             
@@ -673,7 +1128,19 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
             const item = document.createElement('div');
             item.className = 'history-item';
             
-            const preview = story.content[0].substring(0, 100) + '...';
+            // Get preview text
+            let previewText = '';
+            if (story.isInteractive && story.content && story.content.length > 0) {
+                previewText = Array.isArray(story.content) 
+                    ? story.content[0] 
+                    : story.content;
+            } else if (story.content && story.content.length > 0) {
+                previewText = Array.isArray(story.content) 
+                    ? story.content[0] 
+                    : story.content;
+            }
+            
+            const preview = previewText.substring(0, 100) + '...';
             const createdDate = new Date(story.createdAt).toLocaleDateString('vi-VN');
             const genreLabels = {
                 'ngon-tinh': 'Ngôn tình',
@@ -681,14 +1148,20 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
                 'tien-hiep': 'Tiên hiệp'
             };
             
+            const storyType = story.isInteractive ? ' (Tương tác)' : '';
+            const choiceCount = story.choices ? story.choices.length : 0;
+            
             item.innerHTML = `
                 <div class="history-item-content">
-                    <div class="history-item-title">${story.title}</div>
+                    <div class="history-item-title">${story.title}${storyType}</div>
                     <div class="history-item-preview">${preview}</div>
                     <div class="history-item-meta">
                         <span><i class="fas fa-calendar"></i> ${createdDate}</span>
                         <span><i class="fas fa-tag"></i> ${genreLabels[story.genre]}</span>
-                        <span><i class="fas fa-file-alt"></i> ${story.content.length} đoạn</span>
+                        ${story.isInteractive ? 
+                            `<span><i class="fas fa-gamepad"></i> ${choiceCount} lựa chọn</span>` :
+                            `<span><i class="fas fa-file-alt"></i> ${Array.isArray(story.content) ? story.content.length : 1} đoạn</span>`
+                        }
                     </div>
                 </div>
                 <div class="history-item-actions">
@@ -716,7 +1189,34 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         }
         
         this.currentStory = { ...story };
-        this.displayStory();
+        
+        if (story.isInteractive) {
+            // Reset interactive manager and load interactive story
+            this.interactiveManager.reset();
+            
+            // If story has segments, restore them
+            if (story.content && Array.isArray(story.content)) {
+                this.interactiveManager.storySegments = [...story.content];
+            }
+            
+            if (story.choices) {
+                this.interactiveManager.selectedChoices = [...story.choices];
+                this.interactiveManager.currentSegmentIndex = story.choices.length;
+            }
+            
+            this.displayInteractiveStory();
+            this.interactiveManager.updateStoryDisplay();
+            this.interactiveManager.updateProgress();
+            
+            // If story is complete, show legacy controls
+            if (!story.choices || story.choices.length >= this.interactiveManager.maxChoices) {
+                this.interactiveManager.disableInteractiveMode();
+            }
+        } else {
+            // Load legacy story
+            this.interactiveManager.reset();
+            this.displayLegacyStory();
+        }
         
         // Scroll to story display
         document.getElementById('storyDisplaySection').scrollIntoView({ 
@@ -733,7 +1233,30 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
         }
         
         try {
-            const content = `${story.title}\n\n${story.content.join('\n\n')}`;
+            let content = '';
+            
+            if (story.isInteractive) {
+                // Export interactive story
+                const storyText = Array.isArray(story.content) 
+                    ? story.content.join(' ')
+                    : story.content;
+                content = `${story.title}\n\n${storyText}`;
+                
+                // Add choices history if available
+                if (story.choices && story.choices.length > 0) {
+                    content += '\n\n--- Lịch sử lựa chọn ---\n';
+                    story.choices.forEach((choice, index) => {
+                        content += `${index + 1}. ${choice.choice}) ${choice.text}\n`;
+                    });
+                }
+            } else {
+                // Export legacy story
+                const storyText = Array.isArray(story.content) 
+                    ? story.content.join(' ')
+                    : story.content;
+                content = `${story.title}\n\n${storyText}`;
+            }
+            
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             

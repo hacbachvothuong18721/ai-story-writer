@@ -150,7 +150,12 @@
             <section class="story-display-section" id="storyDisplaySection">
                 <div class="card">
                     <div class="card-header">
-                        <h3 id="storyTitle">Tiêu đề truyện</h3>
+                        <div class="story-header">
+                            <h3 id="storyTitle">Tiêu đề truyện</h3>
+                            <div class="story-meta">
+                                <span class="segment-counter">Phần <span id="segmentNumber">1</span></span>
+                            </div>
+                        </div>
                         <div class="story-actions">
                             <button class="btn btn-icon" id="exportBtn" title="Xuất file (Ctrl+S)">
                                 <i class="fas fa-download"></i>
@@ -162,9 +167,39 @@
                     </div>
                     <div class="card-body">
                         <div class="story-content" id="storyContent">
-                            <!-- Story content will be populated here -->
+                            <!-- Continuous story text will be populated here -->
                         </div>
-                        <div class="story-controls">
+                        
+                        <!-- Interactive Choice System -->
+                        <div id="storyChoices" class="story-choices" style="display: none;">
+                            <button class="choice-button" data-choice="A">
+                                <span class="choice-label">A)</span>
+                                <span class="choice-text">Choice A text</span>
+                            </button>
+                            <button class="choice-button" data-choice="B">
+                                <span class="choice-label">B)</span>
+                                <span class="choice-text">Choice B text</span>
+                            </button>
+                            <button class="choice-button" data-choice="C">
+                                <span class="choice-label">C)</span>
+                                <span class="choice-text">Choice C text</span>
+                            </button>
+                            <button class="choice-button" data-choice="D">
+                                <span class="choice-label">D)</span>
+                                <span class="choice-text">Choice D text</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Progress Tracking -->
+                        <div class="story-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="storyProgress"></div>
+                            </div>
+                            <span class="progress-text">Quyết định: <span id="choiceCount">0</span>/10</span>
+                        </div>
+                        
+                        <!-- Legacy Continue Button (hidden when choices are available) -->
+                        <div class="story-controls" id="legacyControls">
                             <button class="btn btn-primary" id="continueBtn">
                                 <i class="fas fa-forward"></i>
                                 <span>Tiếp tục câu chuyện</span>
