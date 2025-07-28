@@ -1306,16 +1306,6 @@ Chỉ trả về nội dung đoạn tiếp theo, không cần tiêu đề:`;
     }
 }
 
-// Initialize Application
-let app;
-document.addEventListener('DOMContentLoaded', () => {
-    app = new AIStoryWriter();
-    
-    // Initialize new authentication and age verification systems
-    window.authManager = new AuthManager();
-    window.ageVerification = new AgeVerification();
-});
-
 // User Authentication System
 class AuthManager {
     constructor() {
@@ -1521,3 +1511,13 @@ class AgeVerification {
         }
     }
 }
+
+// Initialize Application
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+    app = new AIStoryWriter();
+    
+    // Initialize new authentication and age verification systems
+    window.authManager = new AuthManager();
+    window.ageVerification = new AgeVerification();
+});
