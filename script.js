@@ -230,9 +230,9 @@ class AIStoryWriter {
         };
         
         const lengthInstructions = {
-            'short': 'Viết 2-3 đoạn văn ngắn (200-400 từ)',
-            'medium': 'Viết 3-5 đoạn văn trung bình (400-800 từ)', 
-            'long': 'Viết 5-8 đoạn văn dài (800-1500 từ)'
+            'short': 'Viết 2-3 đoạn văn ngắn (200-400 chữ)',
+            'medium': 'Viết 3-5 đoạn văn trung bình (400-800 chữ)', 
+            'long': 'Viết 5-8 đoạn văn dài (800-1500 chữ)'
         };
         
         return `${systemPrompt}

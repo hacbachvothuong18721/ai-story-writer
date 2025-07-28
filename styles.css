@@ -495,10 +495,22 @@ body {
 }
 
 .story-content {
+    /* Better typography */
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #e5e5e5;
+    
+    /* Better spacing */
+    padding: 24px;
+    margin: 16px 0;
     max-height: 70vh;
     overflow-y: auto;
-    margin-bottom: 2rem;
-    padding-right: 1rem;
+    
+    /* Readable format */
+    text-align: justify;
+    word-spacing: 0.1em;
+    letter-spacing: 0.02em;
     
     /* Better scrolling */
     scroll-behavior: smooth;
@@ -534,7 +546,7 @@ body {
     /* Enhanced typography */
     line-height: 1.8;           /* Increased line spacing */
     font-size: 1rem;
-    letter-spacing: 0.3px;      /* Better letter spacing */
+    letter-spacing: 0.02em;     /* Better letter spacing */
     text-align: justify;        /* Justified text alignment */
     word-spacing: 0.1em;        /* Improved word spacing */
     
@@ -578,6 +590,7 @@ body {
     display: flex;
     justify-content: center;
     padding-top: 1rem;
+    margin-top: 2rem;
     border-top: 1px solid var(--card-border);
 }
 
@@ -821,6 +834,20 @@ body {
     
     .toast {
         max-width: none;
+    }
+    
+    /* Mobile responsive story content */
+    .story-content {
+        font-size: 14px;
+        line-height: 1.7;
+        padding: 16px;
+        margin: 12px 0;
+    }
+    
+    .story-paragraph {
+        padding: 1rem;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
     }
 }
 
