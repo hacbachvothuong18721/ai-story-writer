@@ -3,319 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Story Writer - Ứng dụng viết truyện tương tác</title>
+    <title>AI Story Writer - Tạo Truyện Bằng AI</title>
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Custom Styles -->
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                <i class="fas fa-feather-alt"></i>
-                <h1>AI Story Writer</h1>
-            </div>
-            
-            <!-- User Authentication -->
-            <div class="auth-section" id="authSection">
-                <div class="auth-buttons" id="authButtons">
-                    <button class="btn btn-secondary" id="loginBtn">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span>Đăng nhập</span>
-                    </button>
-                    <button class="btn btn-primary" id="registerBtn">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Đăng ký</span>
-                    </button>
-                </div>
-                <div class="user-profile hidden" id="userProfile">
-                    <div class="profile-dropdown">
-                        <button class="profile-btn" id="profileBtn">
-                            <i class="fas fa-user-circle"></i>
-                            <span id="userName">User</span>
-                        </button>
-                        <div class="dropdown-menu" id="profileDropdown">
-                            <a href="#" id="profileLink"><i class="fas fa-user"></i> Hồ sơ</a>
-                            <a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a>
-                            <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
-                        </div>
+    <!-- Background Pattern -->
+    <div class="background-pattern"></div>
+    
+    <!-- Main Container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1 class="app-title">
+                        <i class="fas fa-magic gradient-icon"></i>
+                        AI Story Writer
+                    </h1>
+                    <div class="author-info">
+                        <span class="author-label">Tác giả:</span>
+                        <span class="author-name">Thái Bình Dương</span>
                     </div>
                 </div>
-            </div>
-            
-            <button class="settings-btn" id="settingsBtn">
-                <i class="fas fa-cog"></i>
-                <span>Cài đặt</span>
-            </button>
-        </div>
-    </header>
-
-    <!-- Settings Panel -->
-    <div class="settings-panel" id="settingsPanel">
-        <div class="settings-header">
-            <h3><i class="fas fa-cog"></i> Cài đặt</h3>
-            <button class="close-btn" id="closeSettingsBtn">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="settings-content">
-            <div class="setting-group">
-                <label for="apiKey">Gemini API Key:</label>
-                <div class="input-group">
-                    <input type="password" id="apiKey" placeholder="Nhập Gemini API Key của bạn...">
-                    <button class="toggle-visibility" id="toggleApiKey">
-                        <i class="fas fa-eye"></i>
+                
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="settingsBtn">
+                        <i class="fas fa-cog"></i>
+                        Cài đặt
                     </button>
                 </div>
-                <small class="help-text">
-                    <i class="fas fa-info-circle"></i>
-                    Lấy API key miễn phí tại <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>
-                </small>
             </div>
-            <div class="setting-group">
-                <button class="btn btn-primary" id="saveApiKey">
-                    <i class="fas fa-save"></i>
-                    Lưu API Key
-                </button>
-            </div>
-        </div>
-    </div>
+        </header>
 
-    <!-- Settings Overlay -->
-    <div class="settings-overlay" id="settingsOverlay"></div>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="container">
-            <!-- Story Creation Form -->
-            <section class="story-form-section">
-                <div class="card">
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Story Generator Section -->
+            <section class="generator-section">
+                <div class="generator-card">
                     <div class="card-header">
-                        <h2><i class="fas fa-magic"></i> Tạo truyện mới</h2>
+                        <h2 class="section-title">
+                            <i class="fas fa-pen-fancy"></i>
+                            Tạo Truyện Mới
+                        </h2>
+                        <p class="section-description">
+                            Tạo ra những câu chuyện độc đáo với sức mạnh của AI
+                        </p>
                     </div>
+                    
                     <div class="card-body">
-                        <form id="storyForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="storyGenre">Thể loại:</label>
-                                    <select id="storyGenre" required>
-                                        <option value="">Chọn thể loại</option>
-                                        <option value="ngon-tinh">Ngôn tình</option>
-                                        <option value="sac-hiep">Sắc hiệp</option>
-                                        <option value="tien-hiep">Tiên hiệp</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="storyLength">Độ dài đoạn:</label>
-                                    <select id="storyLength" required>
-                                        <option value="short">Ngắn (200-400 từ)</option>
-                                        <option value="medium" selected>Trung bình (400-800 từ)</option>
-                                        <option value="long">Dài (800-1500 từ)</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <form id="storyForm" class="story-form">
+                            <!-- Genre Selection -->
                             <div class="form-group">
-                                <label for="storyPrompt">Ý tưởng cho truyện:</label>
+                                <label for="storyGenre" class="form-label">
+                                    <i class="fas fa-tags"></i>
+                                    Thể loại truyện
+                                </label>
+                                <select id="storyGenre" class="form-select" required>
+                                    <option value="">Chọn thể loại...</option>
+                                    <option value="ngon-tinh">💕 Ngôn tình - Romance ngọt ngào</option>
+                                    <option value="sac-hiep">🔥 Sắc hiệp - Tâm lý người lớn</option>
+                                    <option value="tien-hiep">⚔️ Tiên hiệp - Tu tiên võ thuật</option>
+                                    <option value="kinh-di">👻 Kinh dị - Supernatural horror</option>
+                                    <option value="hanh-dong">🎯 Hành động - Action thriller</option>
+                                </select>
+                            </div>
+
+                            <!-- Character Name -->
+                            <div class="form-group">
+                                <label for="mainCharacter" class="form-label">
+                                    <i class="fas fa-user"></i>
+                                    Tên nhân vật chính (tùy chọn)
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="mainCharacter" 
+                                    class="form-input"
+                                    placeholder="VD: Minh Anh, Hoàng Long, Linh Chi..."
+                                    maxlength="50"
+                                >
+                                <small class="help-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    Để trống nếu muốn AI tự tạo tên nhân vật
+                                </small>
+                            </div>
+
+                            <!-- Story Prompt -->
+                            <div class="form-group">
+                                <label for="storyPrompt" class="form-label">
+                                    <i class="fas fa-lightbulb"></i>
+                                    Ý tưởng truyện
+                                </label>
                                 <textarea 
                                     id="storyPrompt" 
-                                    placeholder="Mô tả ý tưởng, nhân vật, bối cảnh hoặc tình huống bạn muốn viết thành truyện..."
-                                    required
+                                    class="form-textarea"
+                                    placeholder="Mô tả ý tưởng của bạn... VD: Một cô gái bình thường phát hiện ra mình có siêu năng lực..."
                                     rows="4"
+                                    required
                                 ></textarea>
                             </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-primary" id="generateBtn">
-                                    <i class="fas fa-magic"></i>
-                                    <span>Tạo truyện</span>
-                                    <div class="loading-spinner" id="generateSpinner"></div>
-                                </button>
-                                <button type="button" class="btn btn-secondary" id="newStoryBtn">
-                                    <i class="fas fa-plus"></i>
-                                    Truyện mới
-                                </button>
+
+                            <!-- Story Length -->
+                            <div class="form-group">
+                                <label for="storyLength" class="form-label">
+                                    <i class="fas fa-ruler"></i>
+                                    Độ dài truyện
+                                </label>
+                                <div class="length-options">
+                                    <label class="radio-option">
+                                        <input type="radio" name="storyLength" value="short" checked>
+                                        <span class="radio-custom"></span>
+                                        <div class="option-content">
+                                            <span class="option-title">Ngắn</span>
+                                            <span class="option-desc">2-3 đoạn văn</span>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="radio-option">
+                                        <input type="radio" name="storyLength" value="medium">
+                                        <span class="radio-custom"></span>
+                                        <div class="option-content">
+                                            <span class="option-title">Trung bình</span>
+                                            <span class="option-desc">4-6 đoạn văn</span>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="radio-option">
+                                        <input type="radio" name="storyLength" value="long">
+                                        <span class="radio-custom"></span>
+                                        <div class="option-content">
+                                            <span class="option-title">Dài</span>
+                                            <span class="option-desc">7-10 đoạn văn</span>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary btn-generate">
+                                <span class="btn-text">
+                                    <i class="fas fa-magic"></i>
+                                    Tạo Truyện
+                                </span>
+                                <div class="btn-loading" style="display: none;">
+                                    <div class="loading-spinner"></div>
+                                    Đang tạo...
+                                </div>
+                            </button>
                         </form>
                     </div>
                 </div>
             </section>
 
-            <!-- Story Display -->
-            <section class="story-display-section" id="storyDisplaySection">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 id="storyTitle">Tiêu đề truyện</h3>
+            <!-- Story Display Section -->
+            <section class="story-section" id="storySection" style="display: none;">
+                <div class="story-card">
+                    <div class="story-header">
+                        <h2 class="story-title">
+                            <i class="fas fa-book-open"></i>
+                            Câu Chuyện Của Bạn
+                        </h2>
                         <div class="story-actions">
-                            <button class="btn btn-icon" id="exportBtn" title="Xuất file (Ctrl+S)">
+                            <button class="btn btn-secondary btn-sm" id="copyStoryBtn">
+                                <i class="fas fa-copy"></i>
+                                Sao chép
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="downloadStoryBtn">
                                 <i class="fas fa-download"></i>
-                            </button>
-                            <button class="btn btn-icon" id="saveStoryBtn" title="Lưu truyện">
-                                <i class="fas fa-bookmark"></i>
+                                Tải xuống
                             </button>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="story-content" id="storyContent">
-                            <!-- Story content will be populated here -->
-                        </div>
-                        <div class="story-controls">
-                            <button class="btn btn-primary" id="continueBtn">
-                                <i class="fas fa-forward"></i>
-                                <span>Tiếp tục câu chuyện</span>
-                                <div class="loading-spinner" id="continueSpinner"></div>
-                            </button>
-                        </div>
+                    
+                    <div class="story-content" id="storyContent">
+                        <!-- Story paragraphs will be inserted here -->
                     </div>
-                </div>
-            </section>
-
-            <!-- Story History -->
-            <section class="story-history-section">
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-history"></i> Lịch sử truyện</h3>
-                        <button class="btn btn-icon" id="clearHistoryBtn" title="Xóa lịch sử">
-                            <i class="fas fa-trash"></i>
+                    
+                    <div class="story-footer">
+                        <button class="btn btn-primary" id="continueStoryBtn">
+                            <i class="fas fa-plus"></i>
+                            Tiếp tục truyện
+                        </button>
+                        <button class="btn btn-secondary" id="newStoryBtn">
+                            <i class="fas fa-refresh"></i>
+                            Tạo truyện mới
                         </button>
                     </div>
-                    <div class="card-body">
-                        <div class="history-list" id="historyList">
-                            <div class="empty-state">
-                                <i class="fas fa-book-open"></i>
-                                <p>Chưa có truyện nào. Hãy tạo truyện đầu tiên của bạn!</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </section>
-        </div>
-    </main>
+        </main>
+    </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="loading-spinner large"></div>
-            <p>Đang tạo truyện...</p>
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-cog"></i>
+                    Cài đặt API
+                </h3>
+                <button class="modal-close" id="closeSettingsBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="geminiApiKey" class="form-label">
+                        <i class="fab fa-google"></i>
+                        Gemini API Key
+                    </label>
+                    <input 
+                        type="password" 
+                        id="geminiApiKey" 
+                        class="form-input"
+                        placeholder="Nhập Gemini API Key của bạn..."
+                    >
+                    <small class="help-text">
+                        <i class="fas fa-shield-alt"></i>
+                        API Key được lưu trữ cục bộ và không được gửi đến server nào khác
+                    </small>
+                </div>
+                
+                <div class="api-help">
+                    <h4>Cách lấy Gemini API Key:</h4>
+                    <ol>
+                        <li>Truy cập <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                        <li>Đăng nhập bằng tài khoản Google</li>
+                        <li>Tạo API Key mới</li>
+                        <li>Sao chép và dán vào ô trên</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSettingsBtn">Hủy</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">
+                    <i class="fas fa-save"></i>
+                    Lưu cài đặt
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Toast Notifications -->
+    <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Authentication Modals -->
-    <div class="modal-overlay hidden" id="authModalOverlay">
-        <!-- Login Modal -->
-        <div class="modal" id="loginModal">
-            <div class="modal-header">
-                <h3><i class="fas fa-sign-in-alt"></i> Đăng nhập</h3>
-                <button class="close-btn" id="closeLoginModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="loginEmail">Email:</label>
-                        <input type="email" id="loginEmail" required placeholder="your@email.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="loginPassword">Mật khẩu:</label>
-                        <input type="password" id="loginPassword" required placeholder="••••••••">
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Đăng nhập
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="switchToRegister">
-                            Chưa có tài khoản?
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Register Modal -->
-        <div class="modal hidden" id="registerModal">
-            <div class="modal-header">
-                <h3><i class="fas fa-user-plus"></i> Đăng ký tài khoản</h3>
-                <button class="close-btn" id="closeRegisterModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="registerForm">
-                    <div class="form-group">
-                        <label for="registerName">Họ tên:</label>
-                        <input type="text" id="registerName" required placeholder="Nguyen Van A">
-                    </div>
-                    <div class="form-group">
-                        <label for="registerEmail">Email:</label>
-                        <input type="email" id="registerEmail" required placeholder="your@email.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="registerPassword">Mật khẩu:</label>
-                        <input type="password" id="registerPassword" required placeholder="••••••••">
-                    </div>
-                    <div class="form-group">
-                        <label for="confirmPassword">Xác nhận mật khẩu:</label>
-                        <input type="password" id="confirmPassword" required placeholder="••••••••">
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-user-plus"></i>
-                            Đăng ký
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="switchToLogin">
-                            Đã có tài khoản?
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Age Verification Modal for Sắc hiệp -->
-    <div class="modal-overlay hidden" id="ageVerificationOverlay">
-        <div class="modal age-verification-modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-exclamation-triangle" style="color: #ffd93d;"></i> Cảnh báo nội dung 18+</h3>
-            </div>
-            <div class="modal-body">
-                <div class="warning-content">
-                    <p><strong>Thể loại "Sắc hiệp" chứa nội dung dành cho người trưởng thành (18+)</strong></p>
-                    <ul>
-                        <li>Cảnh tình dục rõ ràng và chi tiết</li>
-                        <li>Ngôn ngữ gợi cảm, khêu gợi</li>
-                        <li>Các tình huống nóng bỏng, kích thích</li>
-                    </ul>
-                    <div class="age-confirmation">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="ageConfirmCheckbox">
-                            <span class="checkmark"></span>
-                            Tôi xác nhận mình đã đủ 18 tuổi và đồng ý xem nội dung người lớn
-                        </label>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-primary" id="confirmAgeBtn" disabled>
-                        <i class="fas fa-check"></i>
-                        Xác nhận và tiếp tục
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="cancelAgeBtn">
-                        <i class="fas fa-times"></i>
-                        Hủy bỏ
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- JavaScript -->
     <script src="script.js"></script>
